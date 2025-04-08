@@ -1,0 +1,49 @@
+const scheduleData = [
+  {
+    day: "Пон",
+    time: "13:45 - 14:30",
+    subject: "ВЧМ л.",
+    room: "2130",
+    teacher: "Иванов",
+    type: "л",
+    week: "all",
+  },
+  {
+    day: "Пон",
+    time: "9:30 - 10:15",
+    subject: "ВЧМ л.",
+    room: "2130",
+    teacher: "Иванов",
+    type: "у",
+    week: "all",
+  },
+  {
+    day: "Ср",
+    time: "9:30 - 10:15",
+    subject: "ИС л.",
+    room: "1370",
+    teacher: "Димитрова",
+    type: "л",
+    week: "odd",
+  },
+  {
+    day: "Ср",
+    time: "10:30 - 11:15",
+    subject: "МАТ1 л.",
+    room: "1370",
+    teacher: "Панева",
+    type: "л",
+    week: "odd",
+  },
+  {
+    day: "Ср",
+    time: "11:30 - 12:15",
+    subject: "ООП л.у",
+    room: "1370",
+    teacher: "Нинов",
+    type: "л.у",
+    week: "odd",
+  },
+];
+
+export default scheduleData;
