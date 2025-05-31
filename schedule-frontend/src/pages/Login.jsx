@@ -1,54 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-// Локални креденшъли за тест
-const adminCredentials = {
-  admin: "admin123",
-  testuser: "pass456",
-};
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [credentials, setCredentials] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch("/credentials.json")
+      .then((res) => res.json())
+      .then((data) => setCredentials(data))
+      .catch((err) =>
+        console.error("Грешка при зареждане на credentials:", err)
+      );
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (adminCredentials[username] && adminCredentials[username] === password) {
-      navigate("/dashboard");
-    } else {
+    const match = credentials.find(
+      (user) => user.username === username && user.password === password
+    );
+
+    if (!match) {
       alert("Невалидно потребителско име или парола");
+      return;
     }
+
+    navigate("/admin");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded shadow-md w-full max-w-sm"
+        className="bg-white p-8 rounded shadow-md w-full max-w-md space-y-4"
       >
-        <h2 className="text-2xl font-bold mb-6 text-center">Админ Вход</h2>
+        <h2 className="text-2xl font-bold text-center">Админ Вход</h2>
 
-        <label className="block mb-2 text-sm font-medium">
-          Потребителско име
-        </label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full p-2 mb-4 border rounded"
-          required
-        />
+        <div>
+          <label className="block mb-1 font-medium">Потребителско име</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full border p-2 rounded"
+            required
+          />
+        </div>
 
-        <label className="block mb-2 text-sm font-medium">Парола</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 mb-6 border rounded"
-          required
-        />
+        <div>
+          <label className="block mb-1 font-medium">Парола</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full border p-2 rounded"
+            required
+          />
+        </div>
 
         <button
           type="submit"
