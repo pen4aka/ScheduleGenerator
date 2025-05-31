@@ -1,10 +1,32 @@
-//for generating schedules or switching weeks (odd/even)
 import React from "react";
 
-export default function Toolbar({ onGenerate, onExport }) {
+export default function Toolbar({
+  onGenerate,
+  onExport,
+  selectedSemester,
+  onSemesterChange,
+}) {
   return (
-    <div className="flex justify-between items-center mb-4 bg-white shadow-md p-4 rounded-xl">
-      <h1 className="text-xl font-bold">Генератор на разписание</h1>
+    <div className="flex flex-wrap justify-between items-center mb-4 bg-white shadow-md p-4 rounded-xl gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+        <h1 className="text-xl font-bold">Генератор на разписание</h1>
+
+        <div className="mt-2 sm:mt-0">
+          <label className="block text-sm font-medium mb-1">Семестър:</label>
+          <select
+            value={selectedSemester}
+            onChange={(e) => onSemesterChange(Number(e.target.value))}
+            className="border rounded px-3 py-1"
+          >
+            {Array.from({ length: 8 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                Семестър {i + 1}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="space-x-2">
         <button
           onClick={onGenerate}
@@ -18,24 +40,6 @@ export default function Toolbar({ onGenerate, onExport }) {
         >
           Експортиране
         </button>
-        <div className="flex gap-4 text-sm mt-2">
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-blue-100 border border-gray-400 rounded" />
-            Лекция
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-green-100 border border-gray-400 rounded" />
-            Упражнение
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-yellow-100 border border-gray-400 rounded" />
-            Лабораторно Упражнение
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-gray-100 border border-gray-400 rounded" />
-            Друго
-          </div>
-        </div>
       </div>
     </div>
   );

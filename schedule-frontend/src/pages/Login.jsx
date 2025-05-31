@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Локални креденшъли за тест
+const adminCredentials = {
+  admin: "admin123",
+  testuser: "pass456",
+};
+
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -8,8 +14,8 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Може да добавиш fetch към бекенда тук
-    if (username === "admin" && password === "admin123") {
+
+    if (adminCredentials[username] && adminCredentials[username] === password) {
       navigate("/dashboard");
     } else {
       alert("Невалидно потребителско име или парола");

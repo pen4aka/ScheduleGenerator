@@ -17,9 +17,7 @@ export default function Dashboard() {
     };
 
     console.log("Стая за изпращане:", roomData);
-    // Тук ще извикаш fetch към бекенда (POST към /api/rooms или подобно)
 
-    // Нулиране на полетата
     setRoomName("");
     setCapacity("");
     setHasProjector(false);
