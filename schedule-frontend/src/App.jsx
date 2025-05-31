@@ -1,7 +1,18 @@
 import Toolbar from "./components/Toolbar";
 import ScheduleGrid from "./components/ScheduleGrid";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import SchedulePage from "./pages/SchedulePage"; // по-късно ще я направим
 
 function App() {
+  <Router>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/schedule" element={<SchedulePage />} />
+    </Routes>
+  </Router>;
   const handleGenerate = () => {
     alert("Генериране на разписание...");
   };
