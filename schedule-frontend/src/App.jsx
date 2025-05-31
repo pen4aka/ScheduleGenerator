@@ -10,7 +10,6 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* <Route path="/schedule" element={<SchedulePage />} /> */}
       </Routes>
     </Router>
   );

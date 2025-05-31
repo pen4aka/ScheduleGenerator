@@ -59,8 +59,11 @@ function mergeLessons(data) {
   return result;
 }
 
-export default function ScheduleGrid() {
-  const mergedData = mergeLessons(scheduleData);
+export default function ScheduleGrid({ semester }) {
+  const filteredData = scheduleData.filter(
+    (item) => parseInt(item.semester) === semester
+  );
+  const mergedData = mergeLessons(filteredData);
 
   return (
     <div className="grid grid-cols-[100px_repeat(14,1fr)] border border-gray-300">
