@@ -2,229 +2,229 @@ import { useState } from "react";
 
 export default function AdminPanel() {
   const [semester, setSemester] = useState(1);
+  const [lessonType, setLessonType] = useState("л");
   const [rooms, setRooms] = useState([
     { name: "", capacity: "", projector: false, computers: false },
   ]);
   const [teachers, setTeachers] = useState([""]);
   const [subjects, setSubjects] = useState([""]);
-  const [groups, setGroups] = useState([{ name: "", size: "" }]);
+  const [groups, setGroups] = useState([{ name: "", capacity: "" }]);
+
+  const addItem = (setter, defaultValue) =>
+    setter((prev) => [...prev, defaultValue]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Изпратени данни:", {
+    const data = {
       semester,
+      lessonType,
       rooms,
       teachers,
       subjects,
       groups,
-    });
-  };
-
-  const addRoom = () => {
-    setRooms([
-      ...rooms,
-      { name: "", capacity: "", projector: false, computers: false },
-    ]);
-  };
-
-  const addTeacher = () => {
-    setTeachers([...teachers, ""]);
-  };
-
-  const addSubject = () => {
-    setSubjects([...subjects, ""]);
-  };
-
-  const addGroup = () => {
-    setGroups([...groups, { name: "", size: "" }]);
+    };
+    console.log("Данни за запис:", data);
+    // fetch('/api/save', { method: 'POST', body: JSON.stringify(data) })
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">
-        Админ панел: Въвеждане на данни
-      </h1>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="p-4 space-y-6">
+      <h2 className="text-2xl font-semibold">Добавяне на информация</h2>
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
         <div>
-          <label className="font-medium block mb-1">Семестър</label>
+          <label className="block font-semibold">Семестър:</label>
           <select
             value={semester}
-            onChange={(e) => setSemester(parseInt(e.target.value))}
-            className="w-full border p-2 rounded"
+            onChange={(e) => setSemester(Number(e.target.value))}
+            className="w-full border border-gray-300 rounded p-2"
           >
             {[...Array(8)].map((_, i) => (
-              <option key={i} value={i + 1}>
-                Семестър {i + 1}
-              </option>
+              <option key={i} value={i + 1}>{`Семестър ${i + 1}`}</option>
             ))}
           </select>
         </div>
 
-        {/* Стаи */}
+        <div>
+          <label className="block font-semibold">Тип занятие:</label>
+          <select
+            value={lessonType}
+            onChange={(e) => setLessonType(e.target.value)}
+            className="w-full border border-gray-300 rounded p-2"
+          >
+            <option value="л">Лекция</option>
+            <option value="л.у">Лабораторно упражнение</option>
+            <option value="с.у">Семинарно упражнение</option>
+          </select>
+        </div>
+
         <div>
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Стаи</h2>
-            <button type="button" onClick={addRoom} className="text-blue-600">
+            <label className="block font-semibold">Стаи</label>
+            <button
+              type="button"
+              onClick={() =>
+                addItem(setRooms, {
+                  name: "",
+                  capacity: "",
+                  projector: false,
+                  computers: false,
+                })
+              }
+              className="text-blue-600"
+            >
               + Добави стая
             </button>
           </div>
-          {rooms.map((room, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-2 gap-4 border p-4 mt-2 rounded"
-            >
+          {rooms.map((room, index) => (
+            <div key={index} className="border p-3 rounded space-y-2 mt-2">
               <input
-                placeholder="Име на стая"
+                type="text"
+                placeholder="Име"
                 value={room.name}
                 onChange={(e) => {
                   const newRooms = [...rooms];
-                  newRooms[i].name = e.target.value;
+                  newRooms[index].name = e.target.value;
                   setRooms(newRooms);
                 }}
-                className="border p-2 rounded"
-                required
+                className="w-full border p-2 rounded"
               />
               <input
-                placeholder="Капацитет"
                 type="number"
+                placeholder="Капацитет"
                 value={room.capacity}
                 onChange={(e) => {
                   const newRooms = [...rooms];
-                  newRooms[i].capacity = e.target.value;
+                  newRooms[index].capacity = e.target.value;
                   setRooms(newRooms);
                 }}
-                className="border p-2 rounded"
-                required
+                className="w-full border p-2 rounded"
               />
-              <label className="col-span-1 flex items-center gap-2">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={room.projector}
                   onChange={(e) => {
                     const newRooms = [...rooms];
-                    newRooms[i].projector = e.target.checked;
+                    newRooms[index].projector = e.target.checked;
                     setRooms(newRooms);
                   }}
-                />
-                Има проектор
+                />{" "}
+                Проектор
               </label>
-              <label className="col-span-1 flex items-center gap-2">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={room.computers}
                   onChange={(e) => {
                     const newRooms = [...rooms];
-                    newRooms[i].computers = e.target.checked;
+                    newRooms[index].computers = e.target.checked;
                     setRooms(newRooms);
                   }}
-                />
-                Има компютри
+                />{" "}
+                Компютри
               </label>
             </div>
           ))}
         </div>
 
-        {/* Преподаватели */}
         <div>
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Преподаватели</h2>
+            <label className="block font-semibold">Преподаватели</label>
             <button
               type="button"
-              onClick={addTeacher}
+              onClick={() => addItem(setTeachers, "")}
               className="text-blue-600"
             >
               + Добави преподавател
             </button>
           </div>
-          {teachers.map((name, i) => (
+          {teachers.map((name, index) => (
             <input
-              key={i}
+              key={index}
+              type="text"
               value={name}
-              placeholder={`Преподавател ${i + 1}`}
+              placeholder={`Преподавател ${index + 1}`}
               onChange={(e) => {
                 const updated = [...teachers];
-                updated[i] = e.target.value;
+                updated[index] = e.target.value;
                 setTeachers(updated);
               }}
               className="w-full border p-2 rounded mt-2"
-              required
             />
           ))}
         </div>
 
-        {/* Предмети */}
         <div>
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Предмети</h2>
+            <label className="block font-semibold">Предмети</label>
             <button
               type="button"
-              onClick={addSubject}
+              onClick={() => addItem(setSubjects, "")}
               className="text-blue-600"
             >
               + Добави предмет
             </button>
           </div>
-          {subjects.map((name, i) => (
+          {subjects.map((name, index) => (
             <input
-              key={i}
+              key={index}
+              type="text"
               value={name}
-              placeholder={`Предмет ${i + 1}`}
+              placeholder={`Предмет ${index + 1}`}
               onChange={(e) => {
                 const updated = [...subjects];
-                updated[i] = e.target.value;
+                updated[index] = e.target.value;
                 setSubjects(updated);
               }}
               className="w-full border p-2 rounded mt-2"
-              required
             />
           ))}
         </div>
 
-        {/* Групи */}
         <div>
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Групи</h2>
-            <button type="button" onClick={addGroup} className="text-blue-600">
+            <label className="block font-semibold">Групи</label>
+            <button
+              type="button"
+              onClick={() => addItem(setGroups, { name: "", capacity: "" })}
+              className="text-blue-600"
+            >
               + Добави група
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {groups.map((group, i) => (
-              <div key={i} className="border p-3 rounded">
-                <input
-                  placeholder="Име на група"
-                  value={group.name}
-                  onChange={(e) => {
-                    const updated = [...groups];
-                    updated[i].name = e.target.value;
-                    setGroups(updated);
-                  }}
-                  className="w-full border p-2 rounded mb-2"
-                  required
-                />
-                <input
-                  placeholder="Капацитет"
-                  type="number"
-                  value={group.size}
-                  onChange={(e) => {
-                    const updated = [...groups];
-                    updated[i].size = e.target.value;
-                    setGroups(updated);
-                  }}
-                  className="w-full border p-2 rounded"
-                  required
-                />
-              </div>
-            ))}
-          </div>
+          {groups.map((group, index) => (
+            <div key={index} className="border p-3 rounded space-y-2 mt-2">
+              <input
+                type="text"
+                placeholder="Име на група"
+                value={group.name}
+                onChange={(e) => {
+                  const updated = [...groups];
+                  updated[index].name = e.target.value;
+                  setGroups(updated);
+                }}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="number"
+                placeholder="Капацитет"
+                value={group.capacity}
+                onChange={(e) => {
+                  const updated = [...groups];
+                  updated[index].capacity = e.target.value;
+                  setGroups(updated);
+                }}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+          ))}
         </div>
 
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Запази данните
+          Запази информация
         </button>
       </form>
     </div>
