@@ -37,7 +37,7 @@ export default function Login() {
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded shadow-md w-full max-w-md space-y-4"
       >
-        <h2 className="text-2xl font-bold text-center">Админ Вход</h2>
+        <h2 className="text-2xl font-bold text-center">Вход</h2>
 
         <div>
           <label className="block mb-1 font-medium">Потребителско име</label>
