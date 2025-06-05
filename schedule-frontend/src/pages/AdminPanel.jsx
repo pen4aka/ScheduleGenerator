@@ -2,12 +2,11 @@ import { useState } from "react";
 
 export default function AdminPanel() {
   const [semester, setSemester] = useState(1);
-  const [lessonType, setLessonType] = useState("л");
   const [rooms, setRooms] = useState([
     { name: "", capacity: "", projector: false, computers: false },
   ]);
   const [teachers, setTeachers] = useState([""]);
-  const [subjects, setSubjects] = useState([""]);
+  const [subjects, setSubjects] = useState([{ name: "", type: "л" }]);
   const [groups, setGroups] = useState([{ name: "", capacity: "" }]);
 
   const addItem = (setter, defaultValue) =>
@@ -17,14 +16,12 @@ export default function AdminPanel() {
     e.preventDefault();
     const data = {
       semester,
-      lessonType,
       rooms,
       teachers,
       subjects,
       groups,
     };
     console.log("Данни за запис:", data);
-    // fetch('/api/save', { method: 'POST', body: JSON.stringify(data) })
   };
 
   return (
@@ -44,19 +41,7 @@ export default function AdminPanel() {
           </select>
         </div>
 
-        <div>
-          <label className="block font-semibold">Тип занятие:</label>
-          <select
-            value={lessonType}
-            onChange={(e) => setLessonType(e.target.value)}
-            className="w-full border border-gray-300 rounded p-2"
-          >
-            <option value="л">Лекция</option>
-            <option value="л.у">Лабораторно упражнение</option>
-            <option value="с.у">Семинарно упражнение</option>
-          </select>
-        </div>
-
+        {/* Стаи */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Стаи</label>
@@ -127,6 +112,7 @@ export default function AdminPanel() {
           ))}
         </div>
 
+        {/* Преподаватели */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Преподаватели</label>
@@ -154,33 +140,49 @@ export default function AdminPanel() {
           ))}
         </div>
 
+        {/* Предмети с тип */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Предмети</label>
             <button
               type="button"
-              onClick={() => addItem(setSubjects, "")}
+              onClick={() => addItem(setSubjects, { name: "", type: "л" })}
               className="text-blue-600"
             >
               + Добави предмет
             </button>
           </div>
-          {subjects.map((name, index) => (
-            <input
-              key={index}
-              type="text"
-              value={name}
-              placeholder={`Предмет ${index + 1}`}
-              onChange={(e) => {
-                const updated = [...subjects];
-                updated[index] = e.target.value;
-                setSubjects(updated);
-              }}
-              className="w-full border p-2 rounded mt-2"
-            />
+          {subjects.map((subject, index) => (
+            <div key={index} className="mt-2">
+              <input
+                type="text"
+                value={subject.name}
+                placeholder={`Предмет ${index + 1}`}
+                onChange={(e) => {
+                  const updated = [...subjects];
+                  updated[index].name = e.target.value;
+                  setSubjects(updated);
+                }}
+                className="w-full border p-2 rounded mb-1"
+              />
+              <select
+                value={subject.type}
+                onChange={(e) => {
+                  const updated = [...subjects];
+                  updated[index].type = e.target.value;
+                  setSubjects(updated);
+                }}
+                className="w-full border p-2 rounded"
+              >
+                <option value="л">Лекция</option>
+                <option value="л.у">Лабораторно упражнение</option>
+                <option value="с.у">Семинарно упражнение</option>
+              </select>
+            </div>
           ))}
         </div>
 
+        {/* Групи */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Групи</label>
