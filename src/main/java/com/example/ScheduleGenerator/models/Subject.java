@@ -14,8 +14,11 @@ public class Subject {
     @Id @GeneratedValue
     private Long id;
 
+    @Column(nullable = false)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subject_type", nullable = false)
     private SubjectType subjectType;
 
     @ManyToOne(fetch = FetchType.LAZY)

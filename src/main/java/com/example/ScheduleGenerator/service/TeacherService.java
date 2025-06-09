@@ -1,13 +1,13 @@
 package com.example.ScheduleGenerator.service;
 
-
 import com.example.ScheduleGenerator.dto.TeacherDto;
-import com.example.ScheduleGenerator.mapper.TeacherMapper;
 import com.example.ScheduleGenerator.models.Subject;
 import com.example.ScheduleGenerator.models.Teacher;
+import com.example.ScheduleGenerator.mapper.TeacherMapper;
 import com.example.ScheduleGenerator.repository.SubjectRepository;
 import com.example.ScheduleGenerator.repository.TeacherRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,43 +23,45 @@ public class TeacherService {
         this.subjectRepository = subjectRepository;
     }
 
+    @Transactional
     public TeacherDto createTeacher(TeacherDto dto) {
-        // Зареждаме Course по ID от DTO
-        Subject subject = subjectRepository.findById(dto.getSubjectId())
-                .orElseThrow(() -> new RuntimeException("Course not found with id " + dto.getSubjectId()));
-        Teacher teacher = TeacherMapper.toEntity(dto, subject);
-        Teacher saved = teacherRepository.save(teacher);
+        Subject subj = subjectRepository.findById(dto.getSubjectId())
+                .orElseThrow(() -> new RuntimeException("Subject not found: " + dto.getSubjectId()));
+        Teacher saved = teacherRepository.save(
+                TeacherMapper.toEntity(dto, subj) );
         return TeacherMapper.toDto(saved);
     }
 
-    public TeacherDto getTeacher(Long id) {
-        Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Teacher not found with id " + id));
-        return TeacherMapper.toDto(teacher);
+    @Transactional(readOnly = true)
+    public TeacherDto getTeacher(Long teacherId) {
+        Teacher teacherEntity = teacherRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
+        return TeacherMapper.toDto(teacherEntity);
     }
 
-    public List<TeacherDto> getAllTeachers() {
-        List<Teacher> teachers = teacherRepository.findAll();
-        return teachers.stream()
+    @Transactional(readOnly = true)
+    public List<TeacherDto> listAllTeachers() {
+        return teacherRepository.findAll().stream()
                 .map(TeacherMapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    public TeacherDto updateTeacher(Long id, TeacherDto dto) {
-        Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Teacher not found with id " + id));
-        teacher.setName(dto.getName());
-        if (dto.getSubjectId() != null) {
-            Subject subject = subjectRepository.findById(dto.getSubjectId())
-                    .orElseThrow(() -> new RuntimeException("Course not found with id " + dto.getSubjectId()));
-            teacher.setSubject(subject);
+    @Transactional
+    public TeacherDto updateTeacher(Long teacherId, TeacherDto teacherDto) {
+        Teacher existing = teacherRepository.findById(teacherId)
+                .orElseThrow(() -> new RuntimeException("Teacher not found: " + teacherId));
+        existing.setName(teacherDto.getName());
+        if (teacherDto.getSubjectId() != null) {
+            Subject subjectEntity = subjectRepository.findById(teacherDto.getSubjectId())
+                    .orElseThrow(() -> new RuntimeException("Subject not found: " + teacherDto.getSubjectId()));
+            existing.setSubject(subjectEntity);
         }
-        Teacher updated = teacherRepository.save(teacher);
+        Teacher updated = teacherRepository.save(existing);
         return TeacherMapper.toDto(updated);
     }
 
-    public void deleteTeacher(Long id) {
-        teacherRepository.deleteById(id);
+    @Transactional
+    public void deleteTeacher(Long teacherId) {
+        teacherRepository.deleteById(teacherId);
     }
 }
-

@@ -1,11 +1,10 @@
 package com.example.ScheduleGenerator.controller;
 
 import com.example.ScheduleGenerator.dto.SubjectDto;
-import com.example.ScheduleGenerator.service.SemesterService;
 import com.example.ScheduleGenerator.service.SubjectService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -13,43 +12,41 @@ import java.util.List;
 public class SubjectController {
 
     private final SubjectService subjectService;
-    private final SemesterService semesterService;
 
-    public SubjectController(SubjectService subjectService,SemesterService semesterService) {
+    public SubjectController(SubjectService subjectService) {
         this.subjectService = subjectService;
-        this.semesterService = semesterService;
     }
 
     @PostMapping
-    public ResponseEntity<SubjectDto> create(@RequestBody SubjectDto dto) {
-        SubjectDto created = subjectService.createSubject(dto);
-        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    public ResponseEntity<SubjectDto> createSubject(@RequestBody SubjectDto subjectDto) {
+        SubjectDto created = subjectService.createSubject(subjectDto);
+        return ResponseEntity.status(201).body(created);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SubjectDto> getById(@PathVariable Long id) {
-        SubjectDto dto = subjectService.getSubject(id);
-        return ResponseEntity.ok(dto);
+    public ResponseEntity<SubjectDto> getSubject(@PathVariable("id") Long subjectId) {
+        SubjectDto found = subjectService.getSubject(subjectId);
+        return ResponseEntity.ok(found);
     }
 
     @GetMapping
-    public ResponseEntity<List<SubjectDto>> getAll() {
-        List<SubjectDto> list = subjectService.getAllSubjects();
-        return ResponseEntity.ok(list);
+    public ResponseEntity<List<SubjectDto>> getAllSubjects() {
+        List<SubjectDto> subjects = subjectService.listAllSubjects();
+        return ResponseEntity.ok(subjects);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SubjectDto> update(
-            @PathVariable Long id,
-            @RequestBody SubjectDto dto) {
-        SubjectDto updated = subjectService.updateSubject(id, dto);
+    public ResponseEntity<SubjectDto> updateSubject(
+            @PathVariable("id") Long subjectId,
+            @RequestBody SubjectDto subjectDto
+    ) {
+        SubjectDto updated = subjectService.updateSubject(subjectId, subjectDto);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        subjectService.deleteSubject(id);
+    public ResponseEntity<Void> deleteSubject(@PathVariable("id") Long subjectId) {
+        subjectService.deleteSubject(subjectId);
         return ResponseEntity.noContent().build();
     }
 }
-
