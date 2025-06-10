@@ -1,36 +1,61 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import credentials from "../../public/credentials.json"; // mock файл с креденшъли
 
-export default function Login() {
+export default function AuthPage() {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const user = credentials.find(
-      (u) => u.username === username && u.password === password
-    );
-
-    if (user) {
-      const role = user.role;
-      if (role === "admin") navigate("/admin");
-      else if (role === "user") navigate("/dashboard");
-      else alert("Неизвестна роля");
-    } else {
-      alert("Невалидни данни за вход.");
+    try {
+      if (isRegistering) {
+        const response = await fetch("http://localhost:3000/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, username, password }),
+        });
+        if (!response.ok) throw new Error("Грешка при регистрация");
+        alert("Успешна регистрация!");
+      } else {
+        const response = await fetch("http://localhost:3000/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        if (!response.ok) throw new Error("Грешка при вход");
+        const data = await response.json();
+        alert("Успешен вход!");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      alert(error.message);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form
-        onSubmit={handleLogin}
+        onSubmit={handleSubmit}
         className="bg-white p-6 rounded shadow-md w-80 space-y-4"
       >
-        <h2 className="text-2xl font-bold text-center">Вход</h2>
+        <h2 className="text-2xl font-bold text-center">
+          {isRegistering ? "Регистрация" : "Вход"}
+        </h2>
+
+        {isRegistering && (
+          <input
+            type="email"
+            placeholder="Имейл"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border p-2 rounded"
+            required
+          />
+        )}
+
         <input
           type="text"
           placeholder="Потребителско име"
@@ -39,6 +64,7 @@ export default function Login() {
           className="w-full border p-2 rounded"
           required
         />
+
         <input
           type="password"
           placeholder="Парола"
@@ -47,12 +73,24 @@ export default function Login() {
           className="w-full border p-2 rounded"
           required
         />
+
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          Вход
+          {isRegistering ? "Регистрация" : "Вход"}
         </button>
+
+        <p className="text-center text-sm">
+          {isRegistering ? "Вече имате профил?" : "Нямате профил?"}{" "}
+          <button
+            type="button"
+            className="text-blue-600 hover:underline"
+            onClick={() => setIsRegistering(!isRegistering)}
+          >
+            {isRegistering ? "Вход" : "Регистрация"}
+          </button>
+        </p>
       </form>
     </div>
   );
