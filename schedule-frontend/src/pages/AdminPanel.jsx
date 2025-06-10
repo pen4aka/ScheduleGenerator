@@ -2,26 +2,41 @@ import { useState } from "react";
 
 export default function AdminPanel() {
   const [semester, setSemester] = useState(1);
+  const [lessonType, setLessonType] = useState("л");
   const [rooms, setRooms] = useState([
     { name: "", capacity: "", projector: false, computers: false },
   ]);
   const [teachers, setTeachers] = useState([""]);
-  const [subjects, setSubjects] = useState([{ name: "", type: "л" }]);
+  const [subjects, setSubjects] = useState([""]);
   const [groups, setGroups] = useState([{ name: "", capacity: "" }]);
 
   const addItem = (setter, defaultValue) =>
     setter((prev) => [...prev, defaultValue]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const data = {
       semester,
+      lessonType,
       rooms,
       teachers,
       subjects,
       groups,
     };
-    console.log("Данни за запис:", data);
+
+    try {
+      const res = await fetch("http://localhost:3000/api/admin/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error("Грешка при изпращане на данни");
+      alert("Данните са успешно запазени!");
+    } catch (err) {
+      console.error("Грешка:", err);
+      alert("Възникна грешка при записа");
+    }
   };
 
   return (
@@ -41,7 +56,19 @@ export default function AdminPanel() {
           </select>
         </div>
 
-        {/* Стаи */}
+        <div>
+          <label className="block font-semibold">Тип занятие:</label>
+          <select
+            value={lessonType}
+            onChange={(e) => setLessonType(e.target.value)}
+            className="w-full border border-gray-300 rounded p-2"
+          >
+            <option value="л">Лекция</option>
+            <option value="л.у">Лабораторно упражнение</option>
+            <option value="с.у">Семинарно упражнение</option>
+          </select>
+        </div>
+
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Стаи</label>
@@ -112,7 +139,6 @@ export default function AdminPanel() {
           ))}
         </div>
 
-        {/* Преподаватели */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Преподаватели</label>
@@ -140,49 +166,33 @@ export default function AdminPanel() {
           ))}
         </div>
 
-        {/* Предмети с тип */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Предмети</label>
             <button
               type="button"
-              onClick={() => addItem(setSubjects, { name: "", type: "л" })}
+              onClick={() => addItem(setSubjects, "")}
               className="text-blue-600"
             >
               + Добави предмет
             </button>
           </div>
-          {subjects.map((subject, index) => (
-            <div key={index} className="mt-2">
-              <input
-                type="text"
-                value={subject.name}
-                placeholder={`Предмет ${index + 1}`}
-                onChange={(e) => {
-                  const updated = [...subjects];
-                  updated[index].name = e.target.value;
-                  setSubjects(updated);
-                }}
-                className="w-full border p-2 rounded mb-1"
-              />
-              <select
-                value={subject.type}
-                onChange={(e) => {
-                  const updated = [...subjects];
-                  updated[index].type = e.target.value;
-                  setSubjects(updated);
-                }}
-                className="w-full border p-2 rounded"
-              >
-                <option value="л">Лекция</option>
-                <option value="л.у">Лабораторно упражнение</option>
-                <option value="с.у">Семинарно упражнение</option>
-              </select>
-            </div>
+          {subjects.map((name, index) => (
+            <input
+              key={index}
+              type="text"
+              value={name}
+              placeholder={`Предмет ${index + 1}`}
+              onChange={(e) => {
+                const updated = [...subjects];
+                updated[index] = e.target.value;
+                setSubjects(updated);
+              }}
+              className="w-full border p-2 rounded mt-2"
+            />
           ))}
         </div>
 
-        {/* Групи */}
         <div>
           <div className="flex justify-between items-center">
             <label className="block font-semibold">Групи</label>
