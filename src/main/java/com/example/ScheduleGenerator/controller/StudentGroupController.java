@@ -17,25 +17,25 @@ public class StudentGroupController {
         this.groupService = groupService;
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<StudentGroupDto> create(@RequestBody StudentGroupDto dto) {
         StudentGroupDto created = groupService.createGroup(dto);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/get/{id}")
     public ResponseEntity<StudentGroupDto> getById(@PathVariable Long id) {
         StudentGroupDto dto = groupService.getGroup(id);
         return ResponseEntity.ok(dto);
     }
 
-    @GetMapping
+    @GetMapping("/getAll")
     public ResponseEntity<List<StudentGroupDto>> getAll() {
         List<StudentGroupDto> list = groupService.getAllGroups();
         return ResponseEntity.ok(list);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/get/{id}")
     public ResponseEntity<StudentGroupDto> update(
             @PathVariable Long id,
             @RequestBody StudentGroupDto dto) {
@@ -43,7 +43,7 @@ public class StudentGroupController {
         return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         groupService.deleteGroup(id);
         return ResponseEntity.noContent().build();

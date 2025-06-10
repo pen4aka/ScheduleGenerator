@@ -23,16 +23,11 @@ public class SemesterService {
 
     @Transactional
     public SemesterDto create(SemesterDto dto) {
+        if (dto == null) throw new IllegalArgumentException("Body cannot be null");
+        dto.setId(null);
         Semester entity = SemesterMapper.toEntity(dto);
-        Semester saved = semesterRepository.save(entity);
+        Semester saved  = semesterRepository.save(entity);
         return SemesterMapper.toDto(saved);
-    }
-
-    @Transactional(readOnly = true)
-    public SemesterDto get(Long id) {
-        Semester s = semesterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester not found with id " + id));
-        return SemesterMapper.toDto(s);
     }
 
     @Transactional(readOnly = true)
@@ -40,16 +35,6 @@ public class SemesterService {
         return semesterRepository.findAll().stream()
                 .map(SemesterMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public SemesterDto update(Long id, SemesterDto dto) {
-        Semester s = semesterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester not found with id " + id));
-        s.setSemesterNo(dto.getSemesterNo());
-        s.setDescription(dto.getDescription());
-        Semester updated = semesterRepository.save(s);
-        return SemesterMapper.toDto(updated);
     }
 
     @Transactional

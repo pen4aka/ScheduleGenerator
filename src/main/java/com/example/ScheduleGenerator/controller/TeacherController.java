@@ -18,19 +18,19 @@ public class TeacherController {
         this.teacherService = teacherService;
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<TeacherDto> create(@RequestBody TeacherDto dto) {
         TeacherDto created = teacherService.createTeacher(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/get/{id}")
     public ResponseEntity<TeacherDto> getTeacher(@PathVariable("id") Long teacherId) {
         TeacherDto found = teacherService.getTeacher(teacherId);
         return ResponseEntity.ok(found);
     }
 
-    @GetMapping
+    @GetMapping("/getAll")
     public ResponseEntity<List<TeacherDto>> getAllTeachers() {
         List<TeacherDto> teachers = teacherService.listAllTeachers();
         return ResponseEntity.ok(teachers);

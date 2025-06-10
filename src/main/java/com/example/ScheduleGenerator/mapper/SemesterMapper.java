@@ -6,13 +6,13 @@ public class SemesterMapper {
     public static SemesterDto toDto(Semester s) {
         if (s==null) return null;
         SemesterDto d = new SemesterDto();
-        d.setId(s.getId()); d.setSemesterNo(s.getSemesterNo()); d.setDescription(s.getDescription());
+        d.setId(s.getId()); d.setSemesterNo(s.getSemesterNo());
         return d;
     }
     public static Semester toEntity(SemesterDto d) {
-        if (d==null) return null;
+        if (d == null) return null;
         Semester s = new Semester();
-        s.setId(d.getId()); s.setSemesterNo(d.getSemesterNo()); s.setDescription(d.getDescription());
+        s.setSemesterNo(d.getSemesterNo());
         return s;
     }
 }

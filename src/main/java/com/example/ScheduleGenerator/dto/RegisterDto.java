@@ -3,7 +3,7 @@ package com.example.ScheduleGenerator.dto;
 import lombok.Data;
 
 @Data
-public class LoginDto {
+public class RegisterDto {
     private String username;
     private String password;
 }

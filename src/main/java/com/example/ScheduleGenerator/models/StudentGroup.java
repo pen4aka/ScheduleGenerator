@@ -10,8 +10,6 @@ import java.util.List;
 @Entity
 @Table(name = "groups")
 public class StudentGroup {
-
-    // Getters & Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,7 +17,6 @@ public class StudentGroup {
     private String nameGroup;
     private int studentCount;
 
-    // Връзка с графика – една група може да има много занятия
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Schedule> schedules;
 
