@@ -1,24 +1,25 @@
 package com.example.ScheduleGenerator.models;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import com.example.ScheduleGenerator.models.enums.SubjectType;
+import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "rooms")
-public class Room {
-
+public class SubjectScheduleInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private int capacity;
-
     @Enumerated(EnumType.STRING)
     private SubjectType type;
 
+    private int totalHours;
+    private int durationPerSession;
+    private int weeksFrequency;
+    private int totalWeeks;
+
+    @ManyToOne
+    private Subject subject;
+
 }
-
-

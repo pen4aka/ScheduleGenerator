@@ -14,11 +14,7 @@ public class StudentGroup {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nameGroup;
+    private Long nameGroup;
+
     private int studentCount;
-
-    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Schedule> schedules;
-
 }
-

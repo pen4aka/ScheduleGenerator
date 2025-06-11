@@ -1,9 +1,10 @@
 package com.example.ScheduleGenerator.repository;
 
-import com.example.ScheduleGenerator.models.Schedule;
+
+import com.example.ScheduleGenerator.models.ScheduledSlot;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
+public interface ScheduledSlotRepository extends JpaRepository<ScheduledSlot, Long> {
 }

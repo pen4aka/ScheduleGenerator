@@ -1,4 +1,4 @@
-package com.example.ScheduleGenerator.controller;
+package com.example.ScheduleGenerator.controller.importController;
 
 import com.example.ScheduleGenerator.service.imports.ExcelImportService;
 import org.springframework.beans.factory.annotation.Autowired;

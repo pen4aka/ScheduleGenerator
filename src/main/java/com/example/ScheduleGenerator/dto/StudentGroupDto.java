@@ -11,7 +11,7 @@ public class StudentGroupDto {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
-    private String nameGroup;
+    private Long nameGroup;
     private int studentCount;
 
 }

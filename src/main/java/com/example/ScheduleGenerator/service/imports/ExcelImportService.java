@@ -1,14 +1,8 @@
 package com.example.ScheduleGenerator.service.imports;
 
-import com.example.ScheduleGenerator.models.Semester;
-import com.example.ScheduleGenerator.models.Subject;
-import com.example.ScheduleGenerator.models.Teacher;
-import com.example.ScheduleGenerator.models.TeachingAssignment;
+import com.example.ScheduleGenerator.models.*;
 import com.example.ScheduleGenerator.models.enums.SubjectType;
-import com.example.ScheduleGenerator.repository.SemesterRepository;
-import com.example.ScheduleGenerator.repository.SubjectRepository;
-import com.example.ScheduleGenerator.repository.TeacherRepository;
-import com.example.ScheduleGenerator.repository.TeachingAssignmentRepository;
+import com.example.ScheduleGenerator.repository.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +18,7 @@ public class ExcelImportService {
     @Autowired private TeacherRepository teacherRepo;
     @Autowired private SemesterRepository semesterRepo;
     @Autowired private TeachingAssignmentRepository assignmentRepo;
+    @Autowired private SubjectScheduleInfoRepository scheduleInfoRepo;
 
     public void importFromExcel(MultipartFile file) throws IOException {
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
@@ -52,32 +47,26 @@ public class ExcelImportService {
                 subject.setSemester(currentSemester);
                 subject = subjectRepo.save(subject);
 
+                // Process assignments by subject type
+                processAssignment(row.getCell(1), subject, SubjectType.ЛЕКЦИИ);
+                processAssignment(row.getCell(2), subject, SubjectType.СЕМИНАРНИ);
+                processAssignment(row.getCell(3), subject, SubjectType.ЛАБОРАТОРНИ);
 
-                SubjectType[] types = {SubjectType.ЛЕКЦИИ, SubjectType.СЕМИНАРНИ, SubjectType.ЛАБОРАТОРНИ};
-                int[] cols = {1, 2, 3};
-
-                for (int i = 0; i < cols.length; i++) {
-                    String teacherCell = getCellValue(row, cols[i]);
-                    if (teacherCell == null || teacherCell.equals("0") || teacherCell.isBlank()) continue;
-                    assignTeachers(teacherCell, subject, types[i]);
-                }
+                // Process schedule info
+                processScheduleInfo(subject, SubjectType.ЛЕКЦИИ, getInt(row.getCell(4)), currentSemester);
+                processScheduleInfo(subject, SubjectType.СЕМИНАРНИ, getInt(row.getCell(5)), currentSemester);
+                processScheduleInfo(subject, SubjectType.ЛАБОРАТОРНИ, getInt(row.getCell(6)), currentSemester);
             }
         }
 
         workbook.close();
     }
 
-    private Semester getOrCreateSemester(String semesterNumber) {
-        return semesterRepo.findBySemesterNo(semesterNumber).orElseGet(() -> {
-            Semester s = new Semester();
-            s.setSemesterNo(semesterNumber);
-            return semesterRepo.save(s);
-        });
-    }
+    private void processAssignment(Cell teacherCell, Subject subject, SubjectType type) {
+        String value = getCellValue(teacherCell);
+        if (value == null || value.equals("0") || value.isBlank()) return;
 
-    private void assignTeachers(String rawCell, Subject subject, SubjectType type) {
-        String[] names = rawCell.split(",");
-        for (String name : names) {
+        for (String name : value.split(",")) {
             String trimmed = name.trim();
             if (trimmed.isBlank()) continue;
 
@@ -96,8 +85,46 @@ public class ExcelImportService {
         }
     }
 
-    private String getCellValue(Row row, int index) {
-        Cell cell = row.getCell(index);
+    private void processScheduleInfo(Subject subject, SubjectType type, Integer hours, Semester semester) {
+        if (hours == null || hours == 0) return;
+
+        int duration, frequency, weeks;
+        int semesterWeeks = semester.getSemesterNo().contains("8") ? 10 : 15;
+
+        if (hours == 45) {
+            duration = 3; frequency = 1; weeks = 15;
+        } else if (hours == 30) {
+            duration = 2; frequency = 1; weeks = 15;
+        } else if (hours == 15) {
+            duration = 2; frequency = 2; weeks = 15;
+        } else if (hours == 20) {
+            duration = 2; frequency = 1; weeks = 10;
+        } else if (hours == 10) {
+            duration = 2; frequency = 2; weeks = 10;
+        } else {
+            return; // unsupported value
+        }
+
+        SubjectScheduleInfo info = new SubjectScheduleInfo();
+        info.setSubject(subject);
+        info.setType(type);
+        info.setTotalHours(hours);
+        info.setDurationPerSession(duration);
+        info.setWeeksFrequency(frequency);
+        info.setTotalWeeks(weeks);
+
+        scheduleInfoRepo.save(info);
+    }
+
+    private Semester getOrCreateSemester(String name) {
+        return semesterRepo.findBySemesterNo(name).orElseGet(() -> {
+            Semester s = new Semester();
+            s.setSemesterNo(name);
+            return semesterRepo.save(s);
+        });
+    }
+
+    private String getCellValue(Cell cell) {
         if (cell == null) return null;
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue().trim();
@@ -105,5 +132,51 @@ public class ExcelImportService {
             default -> null;
         };
     }
+
+    private Integer getInt(Cell cell) {
+        if (cell == null) return null;
+        try {
+            return (int) cell.getNumericCellValue();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Autowired
+    private RoomRepository roomRepository;
+
+    public void importRoomsFromExcel(MultipartFile file) throws IOException {
+        Workbook workbook = new XSSFWorkbook(file.getInputStream());
+        Sheet sheet = workbook.getSheetAt(0);
+        boolean skipHeader = true;
+
+        for (Row row : sheet) {
+            if (skipHeader) {
+                skipHeader = false;
+                continue;
+            }
+
+            String name = getCellValue(row.getCell(0)); // Номер на стая
+            Integer capacity = getInt(row.getCell(1));   // Капацитет
+            String typeText = getCellValue(row.getCell(2)); // Тип стая(Л,СУ,ЛУ)
+
+            SubjectType subjectType = switch (typeText) {
+                case "Л" -> SubjectType.ЛЕКЦИИ;
+                case "СУ" -> SubjectType.СЕМИНАРНИ;
+                case "ЛУ" -> SubjectType.ЛАБОРАТОРНИ;
+                default -> null;
+            };
+
+            if (name != null && capacity != null && subjectType != null) {
+                Room room = new Room();
+                room.setName(name);
+                room.setCapacity(capacity);
+                room.setType(subjectType);
+                roomRepository.save(room);
+            }
+        }
+        workbook.close();
+    }
 }
+
 
