@@ -1,27 +1,21 @@
 package com.example.ScheduleGenerator.mapper;
-
 import com.example.ScheduleGenerator.dto.TeacherDto;
 import com.example.ScheduleGenerator.models.Teacher;
-import com.example.ScheduleGenerator.models.Subject;
+import org.springframework.stereotype.Component;
 
+@Component
 public class TeacherMapper {
-    private TeacherMapper() {}
-
-    public static TeacherDto toDto(Teacher teacher) {
-        if (teacher == null) return null;
+    public TeacherDto toDto(Teacher t) {
         TeacherDto dto = new TeacherDto();
-        dto.setId(teacher.getId());
-        dto.setName(teacher.getName());
-        dto.setSubjectId(teacher.getSubject().getId());  // <-- subject, not course
+        dto.setId(t.getId());
+        dto.setName(t.getName());
         return dto;
     }
 
-    public static Teacher toEntity(TeacherDto dto, Subject subject) {
-        if (dto == null) return null;
-        Teacher teacher = new Teacher();
-        teacher.setId(dto.getId());
-        teacher.setName(dto.getName());
-        teacher.setSubject(subject);                     // <-- set subject
-        return teacher;
+    public Teacher toEntity(TeacherDto dto) {
+        Teacher t = new Teacher();
+        t.setId(dto.getId());
+        t.setName(dto.getName());
+        return t;
     }
 }

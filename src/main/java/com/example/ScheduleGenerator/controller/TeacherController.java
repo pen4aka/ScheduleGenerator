@@ -20,34 +20,11 @@ public class TeacherController {
 
     @PostMapping("/create")
     public ResponseEntity<TeacherDto> create(@RequestBody TeacherDto dto) {
-        TeacherDto created = teacherService.createTeacher(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
-
-    @GetMapping("/get/{id}")
-    public ResponseEntity<TeacherDto> getTeacher(@PathVariable("id") Long teacherId) {
-        TeacherDto found = teacherService.getTeacher(teacherId);
-        return ResponseEntity.ok(found);
+        return ResponseEntity.ok(teacherService.create(dto));
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<TeacherDto>> getAllTeachers() {
-        List<TeacherDto> teachers = teacherService.listAllTeachers();
-        return ResponseEntity.ok(teachers);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<TeacherDto> updateTeacher(
-            @PathVariable("id") Long teacherId,
-            @RequestBody TeacherDto teacherDto
-    ) {
-        TeacherDto updated = teacherService.updateTeacher(teacherId, teacherDto);
-        return ResponseEntity.ok(updated);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTeacher(@PathVariable("id") Long teacherId) {
-        teacherService.deleteTeacher(teacherId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<List<TeacherDto>> getAll() {
+        return ResponseEntity.ok(teacherService.getAll());
     }
 }

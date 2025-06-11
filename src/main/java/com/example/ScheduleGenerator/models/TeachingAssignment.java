@@ -1,26 +1,23 @@
 package com.example.ScheduleGenerator.models;
 
-
 import com.example.ScheduleGenerator.models.enums.SubjectType;
 import jakarta.persistence.*;
 import lombok.Data;
 
-
-import java.util.ArrayList;
-import java.util.List;
 @Data
 @Entity
-@Table(name = "subjects")
-public class Subject {
+@Table(name = "TeachingAssignment")
+public class TeachingAssignment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private SubjectType type;
 
     @ManyToOne
-    private Semester semester;
+    private Subject subject;
 
-    @OneToMany(mappedBy = "subject")
-    private List<TeachingAssignment> assignments;
-
+    @ManyToOne
+    private Teacher teacher;
 }

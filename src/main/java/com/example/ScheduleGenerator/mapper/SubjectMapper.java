@@ -3,31 +3,23 @@ package com.example.ScheduleGenerator.mapper;
 import com.example.ScheduleGenerator.dto.SubjectDto;
 import com.example.ScheduleGenerator.models.Semester;
 import com.example.ScheduleGenerator.models.Subject;
+import org.springframework.stereotype.Component;
 
+@Component
 public class SubjectMapper {
-    private SubjectMapper() {}
-
-    public static SubjectDto toDto(Subject subject) {
-        if (subject == null) {
-            return null;
-        }
+    public SubjectDto toDto(Subject s) {
         SubjectDto dto = new SubjectDto();
-        dto.setId(subject.getId());
-        dto.setName(subject.getName());
-        dto.setSemesterId(subject.getSemester().getId());
-        dto.setSubjectType(subject.getSubjectType());
+        dto.setId(s.getId());
+        dto.setName(s.getName());
+        dto.setSemesterId(s.getSemester().getId());
         return dto;
     }
 
-    public static Subject toEntity(SubjectDto dto, Semester semester) {
-        if (dto == null) {
-            return null;
-        }
-        Subject subject = new Subject();
-        subject.setId(dto.getId());
-        subject.setName(dto.getName());
-        subject.setSemester(semester);
-        subject.setSubjectType(dto.getSubjectType());
-        return subject;
+    public Subject toEntity(SubjectDto dto, Semester semester) {
+        Subject s = new Subject();
+        s.setId(dto.getId());
+        s.setName(dto.getName());
+        s.setSemester(semester);
+        return s;
     }
 }

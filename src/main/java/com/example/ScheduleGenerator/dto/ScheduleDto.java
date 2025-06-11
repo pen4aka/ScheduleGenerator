@@ -6,6 +6,7 @@ import java.time.LocalTime;
 
 @Data
 public class ScheduleDto {
+
     private Long id;
     private Long courseId;
     private Long teacherId;

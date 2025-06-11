@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "semesters")
@@ -13,5 +16,8 @@ public class Semester {
     private Long id;
 
     @Column(name = "semester_no", nullable = false)
-    private int semesterNo;
+    private String semesterNo;
+
+    @OneToMany(mappedBy = "semester", cascade = CascadeType.ALL)
+    private List<Subject> subjects = new ArrayList<>();
 }

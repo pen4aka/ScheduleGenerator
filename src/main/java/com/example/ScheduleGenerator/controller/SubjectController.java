@@ -18,35 +18,13 @@ public class SubjectController {
     }
 
     @PostMapping("/post/create")
-    public ResponseEntity<SubjectDto> createSubject(@RequestBody SubjectDto subjectDto) {
-        SubjectDto created = subjectService.createSubject(subjectDto);
-        return ResponseEntity.status(201).body(created);
-    }
-
-    @GetMapping("/get/{id}")
-    public ResponseEntity<SubjectDto> getSubject(@PathVariable("id") Long subjectId) {
-        SubjectDto found = subjectService.getSubject(subjectId);
-        return ResponseEntity.ok(found);
+    public ResponseEntity<SubjectDto> create(@RequestBody SubjectDto dto) {
+        return ResponseEntity.ok(subjectService.create(dto));
     }
 
     @GetMapping("/getAll")
     public ResponseEntity<List<SubjectDto>> getAllSubjects() {
-        List<SubjectDto> subjects = subjectService.listAllSubjects();
-        return ResponseEntity.ok(subjects);
+        return ResponseEntity.ok(subjectService.getAll());
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<SubjectDto> updateSubject(
-            @PathVariable("id") Long subjectId,
-            @RequestBody SubjectDto subjectDto
-    ) {
-        SubjectDto updated = subjectService.updateSubject(subjectId, subjectDto);
-        return ResponseEntity.ok(updated);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSubject(@PathVariable("id") Long subjectId) {
-        subjectService.deleteSubject(subjectId);
-        return ResponseEntity.noContent().build();
-    }
 }
