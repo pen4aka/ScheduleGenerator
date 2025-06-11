@@ -14,6 +14,7 @@ public class StudentGroupMapper {
         }
         StudentGroupDto dto = new StudentGroupDto();
         dto.setId(group.getId());
+        dto.setNameGroup(group.getNameGroup());
         dto.setStudentCount(group.getStudentCount());
         return dto;
     }
@@ -24,6 +25,7 @@ public class StudentGroupMapper {
         }
         StudentGroup group = new StudentGroup();
         group.setId(dto.getId());
+        group.setNameGroup(dto.getNameGroup());
         group.setStudentCount(dto.getStudentCount());
         return group;
     }

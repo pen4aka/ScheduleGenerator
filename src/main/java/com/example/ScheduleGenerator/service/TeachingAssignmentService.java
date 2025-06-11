@@ -1,38 +1,40 @@
 package com.example.ScheduleGenerator.service;
 
-import com.example.ScheduleGenerator.dto.TeachingAssignmentDto;
-import com.example.ScheduleGenerator.models.TeachingAssignment;
-import com.example.ScheduleGenerator.repository.SubjectRepository;
-import com.example.ScheduleGenerator.repository.TeacherRepository;
-import com.example.ScheduleGenerator.repository.TeachingAssignmentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.example.ScheduleGenerator.dto.TeachingAssignmentDto;
+import com.example.ScheduleGenerator.mapper.TeachingAssignmentMapper;
+import com.example.ScheduleGenerator.repository.TeachingAssignmentRepository;
+
 @Service
 public class TeachingAssignmentService {
-    @Autowired private TeachingAssignmentRepository repo;
-    @Autowired private TeacherRepository teacherRepo;
-    @Autowired private SubjectRepository subjectRepo;
 
-    public TeachingAssignmentDto assignTeacherToSubjectType(TeachingAssignmentDto dto) {
-        TeachingAssignment assignment = new TeachingAssignment();
-        assignment.setType(dto.getType());
-        assignment.setTeacher(teacherRepo.findById(dto.getTeacherId()).orElseThrow());
-        assignment.setSubject(subjectRepo.findById(dto.getSubjectId()).orElseThrow());
-        repo.save(assignment);
-        return dto;
+    private final TeachingAssignmentRepository repo;
+    private final TeachingAssignmentMapper mapper;
+
+    @Autowired
+    public TeachingAssignmentService(
+            TeachingAssignmentRepository repo,
+            TeachingAssignmentMapper mapper
+    ) {
+        this.repo   = repo;
+        this.mapper = mapper;
     }
 
+
+    public TeachingAssignmentDto assignTeacherToSubjectType(TeachingAssignmentDto dto) {
+        var entity = mapper.toEntity(dto);
+        var saved = repo.save(entity);
+        return mapper.toDto(saved);
+    }
     public List<TeachingAssignmentDto> getAssignmentsBySubject(Long subjectId) {
-        return repo.findBySubjectId(subjectId).stream().map(a -> {
-            TeachingAssignmentDto dto = new TeachingAssignmentDto();
-            dto.setSubjectId(a.getSubject().getId());
-            dto.setTeacherId(a.getTeacher().getId());
-            dto.setType(a.getType());
-            return dto;
-        }).collect(Collectors.toList());
+        return repo.findBySubjectId(subjectId)
+                .stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
     }
 }

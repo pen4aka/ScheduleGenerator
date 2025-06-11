@@ -14,7 +14,9 @@ public class StudentGroup {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "name_group")
     private Long nameGroup;
 
+    @Column(name = "student_count")
     private int studentCount;
 }

@@ -1,5 +1,7 @@
 package com.example.ScheduleGenerator.service;
 
+import com.example.ScheduleGenerator.dto.VisualSlotDto;
+import com.example.ScheduleGenerator.mapper.VisualSlotMapper;
 import com.example.ScheduleGenerator.models.*;
 import com.example.ScheduleGenerator.repository.*;
 
@@ -11,6 +13,7 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.example.ScheduleGenerator.models.enums.SubjectType;
+
 
 @Service
 public class ScheduleGenerationService {
@@ -34,47 +37,112 @@ public class ScheduleGenerationService {
             LocalTime.of(17, 0)
     );
 
-    public void generateSchedule() {
-        List<StudentGroup> groups = groupRepo.findAll();
-        List<Room> rooms = roomRepo.findAll();
-        List<SubjectScheduleInfo> scheduleInfos = scheduleInfoRepo.findAll();
-        List<TeachingAssignment> assignments = teachingAssignmentRepo.findAll();
+    public void generateSchedule(Long semesterId) {
+        var allGroups   = groupRepo.findAll();
+        var rooms       = roomRepo.findAll();
+        var infos       = scheduleInfoRepo.findAll();
+        var assignments = teachingAssignmentRepo.findAll();
 
-        for (SubjectScheduleInfo info : scheduleInfos) {
-            int semesterNumber = info.getSubject().getSemester().getSemesterNo().contains("8") ? 8 : 1;
-            int numSessions = calculateRequiredSessions(info.getTotalHours(), semesterNumber);
-            Subject subject = info.getSubject();
-            SubjectType type = info.getType();
+        // A Set of keys we’ve already scheduled, to prevent duplicates
+        Set<String> scheduledKeys = new HashSet<>();
+        List<SubjectScheduleInfo> subjectSemesterInfo = scheduleInfoRepo.findBySubject_Semester_Id(semesterId);
+        for (SubjectScheduleInfo info : infos) {
+            if (info.getTotalHours() <= 0) continue;       // skip zeros
+            Subject      subject = info.getSubject();
+            SubjectType  type    = info.getType();
 
-            Teacher teacher = assignments.stream()
-                    .filter(a -> a.getSubject().equals(subject) && a.getType().equals(type))
+            // find teacher
+            Optional<Teacher> maybeTeacher = assignments.stream()
+                    .filter(a -> a.getSubject().equals(subject) && a.getType()==type)
                     .map(TeachingAssignment::getTeacher)
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No teacher for " + subject.getName() + " " + type));
+                    .findFirst();
+            if (maybeTeacher.isEmpty()) continue;
+            Teacher teacher = maybeTeacher.get();
 
-            List<StudentGroup> attendingGroups = (type == SubjectType.ЛЕКЦИИ) ?
-                    groups : splitGroups(groups);
+            // build “batches” of groups
+            List<List<StudentGroup>> batches = new ArrayList<>();
+            if (type == SubjectType.ЛЕКЦИИ) {
+                batches.add(allGroups);
+            } else {
+                allGroups.forEach(g -> batches.add(List.of(g)));
+            }
 
-            for (int i = 0; i < numSessions; i++) {
-                Optional<ScheduledSlot> slotOpt = findAvailableSlot(teacher, attendingGroups, rooms, type, i);
-                if (slotOpt.isPresent()) {
-                    ScheduledSlot slot = slotOpt.get();
-                    slot.setSubject(subject);
-                    slot.setType(type);
-                    scheduledSlotRepo.save(slot);
-                } else {
-                    System.out.println("⚠️ Could not find slot for: " + subject.getName() + " - " + type);
+            // for each batch, schedule exactly ONE slot
+            for (List<StudentGroup> batch : batches) {
+                // compose a unique key per-subject/type/batch
+                String batchKey = subject.getId() + "|" + type + "|" +
+                        batch.stream().map(StudentGroup::getId).sorted()
+                                .map(Object::toString).collect(Collectors.joining(","));
+
+                if (scheduledKeys.contains(batchKey)) {
+                    continue;   // already scheduled exactly one
                 }
+
+                findAvailableSlot(teacher, batch, rooms, type)
+                        .ifPresent(slot -> {
+                            slot.setSubject(subject);
+                            slot.setType(type);
+                            slot.setGroups(new ArrayList<>(batch));
+                            // how often it runs across the semester:
+                            slot.setWeeksFrequency(info.getWeeksFrequency());
+                            scheduledSlotRepo.save(slot);
+                            scheduledKeys.add(batchKey);
+                        });
             }
         }
     }
+    public List<VisualSlotDto> getSchedule(Long semesterId) {
+        return slotRepo.findBySubject_Semester_Id(semesterId).stream()
+                .map(VisualSlotMapper::toDTO)
+                .sorted(Comparator
+                        .comparing(VisualSlotDto::getDay)
+                        .thenComparing(VisualSlotDto::getStartTime))
+                .collect(Collectors.toList());
+    }
 
-    private int calculateRequiredSessions(int totalHours, int semesterNumber) {
-        if (semesterNumber == 8) {
+    // … calculateRequiredSessions, splitGroups unchanged …
+
+    private Optional<ScheduledSlot> findAvailableSlot(
+            Teacher teacher,
+            List<StudentGroup> groups,
+            List<Room> rooms,
+            SubjectType type
+    ) {
+        int duration = (type == SubjectType.ЛАБОРАТОРНИ) ? 180 : 120;
+        var existing = scheduledSlotRepo.findAll();
+
+        for (DayOfWeek day : WORK_DAYS) {
+            for (LocalTime start : SLOT_START_TIMES) {
+                for (Room room : rooms) {
+                    if (room.getType() != type) continue;
+
+                    boolean conflict = existing.stream().anyMatch(s ->
+                            s.getDay() == day &&
+                                    s.getStartTime().equals(start) &&
+                                    (s.getRoom().equals(room) ||
+                                            s.getTeacher().equals(teacher) ||
+                                            !Collections.disjoint(s.getGroups(), groups))
+                    );
+                    if (conflict) continue;
+
+                    ScheduledSlot s = new ScheduledSlot();
+                    s.setDay(day);
+                    s.setStartTime(start);
+                    s.setDurationMinutes(duration);
+                    s.setRoom(room);
+                    s.setTeacher(teacher);
+                    return Optional.of(s);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private int calculateRequiredSessions(int totalHours, int semNumber) {
+        if (semNumber == 8) {
             if (totalHours == 20) return 10;
             if (totalHours == 10) return 5;
         }
-
         return switch (totalHours) {
             case 45 -> 15;
             case 30 -> 15;
@@ -84,65 +152,18 @@ public class ScheduleGenerationService {
     }
 
     private List<StudentGroup> splitGroups(List<StudentGroup> groups) {
-        return groups; // Initially no subgrouping
+        // Simple: return each group individually
+        return new ArrayList<>(groups);
     }
+    @Autowired
+    private ScheduledSlotRepository slotRepo;
 
-    private Optional<ScheduledSlot> findAvailableSlot(
-            Teacher teacher,
-            List<StudentGroup> groups,
-            List<Room> allRooms,
-            SubjectType type,
-            int index
-    ) {
-        int duration = switch (type) {
-            case ЛЕКЦИИ -> 120;
-            case СЕМИНАРНИ -> 120;
-            case ЛАБОРАТОРНИ -> 180;
-        };
-
-        List<ScheduledSlot> existing = scheduledSlotRepo.findAll();
-
-        for (DayOfWeek day : WORK_DAYS) {
-            for (LocalTime startTime : SLOT_START_TIMES) {
-                for (Room room : allRooms) {
-                    System.out.printf("🧪 Trying slot: %s %s in %s%n", day, startTime, room.getName());
-                    if (!room.getType().equals(type)) continue;
-
-                    boolean roomBusy = existing.stream().anyMatch(slot ->
-                            slot.getRoom().equals(room) &&
-                                    slot.getDay().equals(day) &&
-                                    slot.getStartTime().equals(startTime)
-                    );
-                    if (roomBusy) continue;
-
-                    boolean teacherBusy = existing.stream().anyMatch(slot ->
-                            slot.getTeacher().equals(teacher) &&
-                                    slot.getDay().equals(day) &&
-                                    slot.getStartTime().equals(startTime)
-                    );
-                    if (teacherBusy) continue;
-
-                    boolean groupBusy = groups.stream().anyMatch(group ->
-                            existing.stream().anyMatch(slot ->
-                                    slot.getGroups().contains(group) &&
-                                            slot.getDay().equals(day) &&
-                                            slot.getStartTime().equals(startTime)
-                            )
-                    );
-                    if (groupBusy) continue;
-
-                    ScheduledSlot slot = new ScheduledSlot();
-                    slot.setDay(day);
-                    slot.setStartTime(startTime);
-                    slot.setDurationMinutes(duration);
-                    slot.setRoom(room);
-                    slot.setTeacher(teacher);
-                    slot.setGroups(groups);
-
-                    return Optional.of(slot);
-                }
-            }
-        }
-        return Optional.empty();
+    public List<VisualSlotDto> getSchedule() {
+        return slotRepo.findAll().stream()
+                .map(VisualSlotMapper::toDTO)
+                .sorted(Comparator
+                        .comparing(VisualSlotDto::getDay)
+                        .thenComparing(VisualSlotDto::getStartTime))
+                .collect(Collectors.toList());
     }
 }

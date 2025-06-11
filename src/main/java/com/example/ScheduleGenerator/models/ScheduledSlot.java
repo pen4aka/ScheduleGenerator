@@ -4,6 +4,7 @@ package com.example.ScheduleGenerator.models;
 import jakarta.persistence.*;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import com.example.ScheduleGenerator.models.enums.SubjectType;
 import lombok.Data;
@@ -28,11 +29,18 @@ public class ScheduledSlot {
     private Teacher teacher;
 
     @ManyToMany
-    private List<StudentGroup> groups;
+    @JoinTable(
+            name = "scheduled_slot_groups",
+            joinColumns = @JoinColumn(name = "scheduled_slot_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id")
+    )
+    private List<StudentGroup> groups = new ArrayList<>();
 
     @ManyToOne
     private Subject subject;
 
     @Enumerated(EnumType.STRING)
     private SubjectType type;
+
+    private int weeksFrequency = 1;
 }

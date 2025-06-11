@@ -6,6 +6,7 @@ import com.example.ScheduleGenerator.models.enums.SubjectType;
 
 @Data
 @Entity
+
 @Table(name = "rooms")
 public class Room {
 
