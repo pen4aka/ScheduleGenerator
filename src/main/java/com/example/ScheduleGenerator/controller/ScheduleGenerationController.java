@@ -17,6 +17,7 @@ public class ScheduleGenerationController {
 
         @PostMapping("/generate")
         public ResponseEntity<Void> generate(@RequestParam Long semesterId) {
+            service.wipeScheduleData();
             service.generateSchedule(semesterId);
             return ResponseEntity.ok().build();
         }
@@ -25,6 +26,12 @@ public class ScheduleGenerationController {
     public ResponseEntity<List<VisualSlotDto>> view(@RequestParam Long semesterId) {
         List<VisualSlotDto> schedule = service.getSchedule(semesterId);
         return ResponseEntity.ok(schedule);
+    }
+
+    @DeleteMapping("/wipe")
+    public ResponseEntity<Void> wipeSchedule() {
+        service.wipeScheduleData();
+        return ResponseEntity.ok().build();
     }
 
 }

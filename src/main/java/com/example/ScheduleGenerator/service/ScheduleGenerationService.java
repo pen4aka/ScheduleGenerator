@@ -23,6 +23,7 @@ public class ScheduleGenerationService {
     @Autowired private RoomRepository roomRepo;
     @Autowired private StudentGroupRepository groupRepo;
     @Autowired private ScheduledSlotRepository scheduledSlotRepo;
+    @Autowired private ScheduledSlotRepository slotRepo;
 
     private static final List<DayOfWeek> WORK_DAYS = List.of(
             DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
@@ -38,20 +39,19 @@ public class ScheduleGenerationService {
     );
 
     public void generateSchedule(Long semesterId) {
+
         var allGroups   = groupRepo.findAll();
         var rooms       = roomRepo.findAll();
         var infos       = scheduleInfoRepo.findAll();
         var assignments = teachingAssignmentRepo.findAll();
 
-        // A Set of keys we’ve already scheduled, to prevent duplicates
         Set<String> scheduledKeys = new HashSet<>();
         List<SubjectScheduleInfo> subjectSemesterInfo = scheduleInfoRepo.findBySubject_Semester_Id(semesterId);
-        for (SubjectScheduleInfo info : infos) {
-            if (info.getTotalHours() <= 0) continue;       // skip zeros
-            Subject      subject = info.getSubject();
-            SubjectType  type    = info.getType();
+        for (SubjectScheduleInfo info : subjectSemesterInfo) {
+            if (info.getTotalHours() <= 0) continue;
+            Subject subject = info.getSubject();
+            SubjectType type = info.getType();
 
-            // find teacher
             Optional<Teacher> maybeTeacher = assignments.stream()
                     .filter(a -> a.getSubject().equals(subject) && a.getType()==type)
                     .map(TeachingAssignment::getTeacher)
@@ -59,23 +59,15 @@ public class ScheduleGenerationService {
             if (maybeTeacher.isEmpty()) continue;
             Teacher teacher = maybeTeacher.get();
 
-            // build “batches” of groups
-            List<List<StudentGroup>> batches = new ArrayList<>();
-            if (type == SubjectType.ЛЕКЦИИ) {
-                batches.add(allGroups);
-            } else {
-                allGroups.forEach(g -> batches.add(List.of(g)));
-            }
+            List<List<StudentGroup>> batches = optimizedGroupBatches(allGroups, type, rooms);
 
-            // for each batch, schedule exactly ONE slot
             for (List<StudentGroup> batch : batches) {
-                // compose a unique key per-subject/type/batch
                 String batchKey = subject.getId() + "|" + type + "|" +
                         batch.stream().map(StudentGroup::getId).sorted()
                                 .map(Object::toString).collect(Collectors.joining(","));
 
                 if (scheduledKeys.contains(batchKey)) {
-                    continue;   // already scheduled exactly one
+                    continue;
                 }
 
                 findAvailableSlot(teacher, batch, rooms, type)
@@ -83,7 +75,6 @@ public class ScheduleGenerationService {
                             slot.setSubject(subject);
                             slot.setType(type);
                             slot.setGroups(new ArrayList<>(batch));
-                            // how often it runs across the semester:
                             slot.setWeeksFrequency(info.getWeeksFrequency());
                             scheduledSlotRepo.save(slot);
                             scheduledKeys.add(batchKey);
@@ -91,6 +82,7 @@ public class ScheduleGenerationService {
             }
         }
     }
+
     public List<VisualSlotDto> getSchedule(Long semesterId) {
         return slotRepo.findBySubject_Semester_Id(semesterId).stream()
                 .map(VisualSlotMapper::toDTO)
@@ -99,8 +91,6 @@ public class ScheduleGenerationService {
                         .thenComparing(VisualSlotDto::getStartTime))
                 .collect(Collectors.toList());
     }
-
-    // … calculateRequiredSessions, splitGroups unchanged …
 
     private Optional<ScheduledSlot> findAvailableSlot(
             Teacher teacher,
@@ -111,18 +101,22 @@ public class ScheduleGenerationService {
         int duration = (type == SubjectType.ЛАБОРАТОРНИ) ? 180 : 120;
         var existing = scheduledSlotRepo.findAll();
 
-        for (DayOfWeek day : WORK_DAYS) {
+        List<DayOfWeek> loadBalancedDays = WORK_DAYS.stream()
+                .sorted(Comparator.comparingInt(d ->
+                        (int) scheduledSlotRepo.findAll().stream()
+                                .filter(s -> s.getDay() == d)
+                                .count()
+                ))
+                .collect(Collectors.toList());
+
+        for (DayOfWeek day : loadBalancedDays) {
             for (LocalTime start : SLOT_START_TIMES) {
+                LocalTime end = start.plusMinutes(duration);
+
                 for (Room room : rooms) {
                     if (room.getType() != type) continue;
 
-                    boolean conflict = existing.stream().anyMatch(s ->
-                            s.getDay() == day &&
-                                    s.getStartTime().equals(start) &&
-                                    (s.getRoom().equals(room) ||
-                                            s.getTeacher().equals(teacher) ||
-                                            !Collections.disjoint(s.getGroups(), groups))
-                    );
+                    boolean conflict = hasConflict(day, start, duration, room, teacher, groups);
                     if (conflict) continue;
 
                     ScheduledSlot s = new ScheduledSlot();
@@ -138,6 +132,27 @@ public class ScheduleGenerationService {
         return Optional.empty();
     }
 
+    private boolean hasConflict(
+            DayOfWeek day, LocalTime start, int duration, Room room,
+            Teacher teacher, List<StudentGroup> groups
+    ) {
+        LocalTime end = start.plusMinutes(duration);
+
+        return scheduledSlotRepo.findAll().stream().anyMatch(slot -> {
+            if (!slot.getDay().equals(day)) return false;
+
+            LocalTime existingStart = slot.getStartTime();
+            LocalTime existingEnd = existingStart.plusMinutes(slot.getDurationMinutes());
+
+            boolean overlap = !(end.isBefore(existingStart) || start.isAfter(existingEnd));
+            boolean roomConflict = slot.getRoom().equals(room);
+            boolean teacherConflict = slot.getTeacher().equals(teacher);
+            boolean groupConflict = !Collections.disjoint(slot.getGroups(), groups);
+
+            return overlap && (roomConflict || teacherConflict || groupConflict);
+        });
+    }
+
     private int calculateRequiredSessions(int totalHours, int semNumber) {
         if (semNumber == 8) {
             if (totalHours == 20) return 10;
@@ -151,19 +166,47 @@ public class ScheduleGenerationService {
         };
     }
 
-    private List<StudentGroup> splitGroups(List<StudentGroup> groups) {
-        // Simple: return each group individually
-        return new ArrayList<>(groups);
-    }
-    @Autowired
-    private ScheduledSlotRepository slotRepo;
+    private List<List<StudentGroup>> optimizedGroupBatches(
+            List<StudentGroup> allGroups, SubjectType type, List<Room> rooms
+    ) {
+        List<List<StudentGroup>> result = new ArrayList<>();
+        int totalStudents = allGroups.stream().mapToInt(StudentGroup::getStudentCount).sum();
 
-    public List<VisualSlotDto> getSchedule() {
-        return slotRepo.findAll().stream()
-                .map(VisualSlotMapper::toDTO)
-                .sorted(Comparator
-                        .comparing(VisualSlotDto::getDay)
-                        .thenComparing(VisualSlotDto::getStartTime))
+        List<Room> validRooms = rooms.stream()
+                .filter(r -> r.getType() == type)
+                .sorted(Comparator.comparingInt(Room::getCapacity).reversed())
                 .collect(Collectors.toList());
+
+        if (validRooms.isEmpty()) {
+            return allGroups.stream().map(List::of).collect(Collectors.toList());
+        }
+
+        Room maxRoom = validRooms.get(0);
+
+        if (maxRoom.getCapacity() >= totalStudents) {
+            result.add(allGroups);
+        } else {
+            List<StudentGroup> current = new ArrayList<>();
+            int currentTotal = 0;
+
+            for (StudentGroup group : allGroups) {
+                if (currentTotal + group.getStudentCount() <= maxRoom.getCapacity()) {
+                    current.add(group);
+                    currentTotal += group.getStudentCount();
+                } else {
+                    result.add(new ArrayList<>(current));
+                    current.clear();
+                    current.add(group);
+                    currentTotal = group.getStudentCount();
+                }
+            }
+            if (!current.isEmpty()) result.add(current);
+        }
+
+        return result;
+    }
+
+    public void wipeScheduleData() {
+        scheduledSlotRepo.deleteAll();
     }
 }

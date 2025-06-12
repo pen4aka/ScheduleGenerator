@@ -19,6 +19,7 @@ public class ExcelImportService {
     @Autowired private SemesterRepository semesterRepo;
     @Autowired private TeachingAssignmentRepository assignmentRepo;
     @Autowired private SubjectScheduleInfoRepository scheduleInfoRepo;
+    @Autowired private StudentGroupRepository groupRepo;
 
     public void importFromExcel(MultipartFile file) throws IOException {
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
@@ -56,10 +57,34 @@ public class ExcelImportService {
                 processScheduleInfo(subject, SubjectType.ЛЕКЦИИ, getInt(row.getCell(4)), currentSemester);
                 processScheduleInfo(subject, SubjectType.СЕМИНАРНИ, getInt(row.getCell(5)), currentSemester);
                 processScheduleInfo(subject, SubjectType.ЛАБОРАТОРНИ, getInt(row.getCell(6)), currentSemester);
+
+                importGroups(row.getCell(7));
             }
         }
 
         workbook.close();
+    }
+
+    private void importGroups(Cell groupCell) {
+        if (groupCell == null) return;
+        String value = getCellValue(groupCell);
+        if (value == null || value.equals("0") || value.isBlank()) return;
+
+        for (String token : value.split(",")) {
+            String trimmed = token.trim();
+            if (trimmed.isBlank()) continue;
+            try {
+                long groupNumber = Long.parseLong(trimmed);
+                boolean exists = groupRepo.findAll().stream()
+                        .anyMatch(g -> g.getNameGroup().equals(groupNumber));
+                if (!exists) {
+                    StudentGroup group = new StudentGroup();
+                    group.setNameGroup(groupNumber);
+                    group.setStudentCount(30); // Default size
+                    groupRepo.save(group);
+                }
+            } catch (NumberFormatException ignored) {}
+        }
     }
 
     private void processAssignment(Cell teacherCell, Subject subject, SubjectType type) {
