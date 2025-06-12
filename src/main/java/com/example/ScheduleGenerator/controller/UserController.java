@@ -42,18 +42,6 @@ public class UserController {
         users.save(u);
         return ResponseEntity.ok("Registered");
     }
-
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginDto req) {
-        try {
-            Authentication auth = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
-            );
-            return ResponseEntity.ok("Logged in as " + auth.getName());
-        } catch (BadCredentialsException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid creds");
-        }
-    }
     @DeleteMapping("/{username}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteUser(@PathVariable String username) {
