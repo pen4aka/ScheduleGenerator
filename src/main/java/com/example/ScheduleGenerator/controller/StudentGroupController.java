@@ -23,29 +23,9 @@ public class StudentGroupController {
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
-    @GetMapping("/get/{id}")
-    public ResponseEntity<StudentGroupDto> getById(@PathVariable Long id) {
-        StudentGroupDto dto = groupService.getGroup(id);
-        return ResponseEntity.ok(dto);
-    }
-
     @GetMapping("/getAll")
     public ResponseEntity<List<StudentGroupDto>> getAll() {
         List<StudentGroupDto> list = groupService.getAllGroups();
         return ResponseEntity.ok(list);
-    }
-
-    @PutMapping("/get/{id}")
-    public ResponseEntity<StudentGroupDto> update(
-            @PathVariable Long id,
-            @RequestBody StudentGroupDto dto) {
-        StudentGroupDto updated = groupService.updateGroup(id, dto);
-        return ResponseEntity.ok(updated);
-    }
-
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        groupService.deleteGroup(id);
-        return ResponseEntity.noContent().build();
     }
 }
