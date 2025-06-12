@@ -9,7 +9,7 @@ export default function Toolbar({
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-white shadow-md p-4 rounded-xl space-y-4 sm:space-y-0">
       <div className="flex flex-col sm:flex-row items-center gap-4">
-        <h1 className="text-xl font-bold">Генератор на разписание</h1>
+        <h1 className="text-xl font-bold">Избор на семестър</h1>
         <select
           value={semester}
           onChange={(e) => setSemester(parseInt(e.target.value))}

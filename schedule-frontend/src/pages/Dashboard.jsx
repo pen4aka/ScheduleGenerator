@@ -21,14 +21,23 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4">
-      <Toolbar
-        onGenerate={handleGenerate}
-        onExport={handleExport}
-        semester={semester}
-        setSemester={setSemester}
-      />
-      <ScheduleGrid semester={semester} />
+    <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 transition-all duration-300">
+        <h1 className="text-3xl font-extrabold text-center text-indigo-700 mb-8">
+          📅 Седмично разписание
+        </h1>
+
+        <Toolbar
+          onGenerate={handleGenerate}
+          onExport={handleExport}
+          semester={semester}
+          setSemester={setSemester}
+        />
+
+        <div className="mt-8 overflow-x-auto rounded-lg border border-gray-300 shadow-sm">
+          <ScheduleGrid semester={semester} />
+        </div>
+      </div>
     </div>
   );
 }

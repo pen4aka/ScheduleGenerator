@@ -1,97 +1,95 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Lock, Mail } from "lucide-react";
 
-export default function AuthPage() {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+export default function Login() {
   const navigate = useNavigate();
+  const [credentials, setCredentials] = useState({
+    username: "",
+    password: "",
+  });
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      if (isRegistering) {
-        const response = await fetch("http://localhost:3000/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, username, password }),
-        });
-        if (!response.ok) throw new Error("Грешка при регистрация");
-        alert("Успешна регистрация!");
+      const res = await fetch("http://localhost:3000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        navigate(data.role === "admin" ? "/admin" : "/dashboard");
       } else {
-        const response = await fetch("http://localhost:3000/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
-        if (!response.ok) throw new Error("Грешка при вход");
-        const data = await response.json();
-        alert("Успешен вход!");
-        navigate("/dashboard");
+        setError(data.message || "Грешка при вход.");
       }
-    } catch (error) {
-      alert(error.message);
+    } catch (err) {
+      setError("Сървърна грешка.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-80 space-y-4"
-      >
-        <h2 className="text-2xl font-bold text-center">
-          {isRegistering ? "Регистрация" : "Вход"}
+    <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <h2 className="text-3xl font-extrabold text-center text-indigo-700 mb-6">
+          Вход в системата
         </h2>
 
-        {isRegistering && (
-          <input
-            type="email"
-            placeholder="Имейл"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border p-2 rounded"
-            required
-          />
+        {error && (
+          <div className="bg-red-100 text-red-700 p-3 mb-4 rounded text-sm text-center">
+            {error}
+          </div>
         )}
 
-        <input
-          type="text"
-          placeholder="Потребителско име"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="relative">
+            <Mail className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Потребителско име"
+              value={credentials.username}
+              onChange={(e) =>
+                setCredentials({ ...credentials, username: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
+              required
+            />
+          </div>
 
-        <input
-          type="password"
-          placeholder="Парола"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 rounded"
-          required
-        />
+          <div className="relative">
+            <Lock className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+            <input
+              type="password"
+              placeholder="Парола"
+              value={credentials.password}
+              onChange={(e) =>
+                setCredentials({ ...credentials, password: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
+              required
+            />
+          </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        >
-          {isRegistering ? "Регистрация" : "Вход"}
-        </button>
-
-        <p className="text-center text-sm">
-          {isRegistering ? "Вече имате профил?" : "Нямате профил?"}{" "}
           <button
-            type="button"
-            className="text-blue-600 hover:underline"
-            onClick={() => setIsRegistering(!isRegistering)}
+            type="submit"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold transition"
           >
-            {isRegistering ? "Вход" : "Регистрация"}
+            Вход
           </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Нямате акаунт?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="text-indigo-600 hover:underline cursor-pointer"
+          >
+            Регистрирайте се
+          </span>
         </p>
-      </form>
+      </div>
     </div>
   );
 }

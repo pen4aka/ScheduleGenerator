@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
-import AdminPanel from "./pages/AdminPanel";
+import Register from "./pages/RegisterPage";
+import AdminUpload from "./pages/AdminUpload";
 import Dashboard from "./pages/Dashboard";
 
 function App() {
@@ -8,8 +9,9 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/Register" element={<Register />} />
+        <Route path="/Upload" element={<AdminUpload />} />
+        <Route path="/Dashboard" element={<Dashboard />} />
       </Routes>
     </Router>
   );
