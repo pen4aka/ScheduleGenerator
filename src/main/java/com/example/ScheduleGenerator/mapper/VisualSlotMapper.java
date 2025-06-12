@@ -2,9 +2,11 @@ package com.example.ScheduleGenerator.mapper;
 
 import com.example.ScheduleGenerator.dto.VisualSlotDto;
 import com.example.ScheduleGenerator.models.ScheduledSlot;
+import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
+@Component
 public class VisualSlotMapper {
 
     public static VisualSlotDto toDTO(ScheduledSlot slot) {

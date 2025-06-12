@@ -2,7 +2,9 @@ package com.example.ScheduleGenerator.mapper;
 
 import com.example.ScheduleGenerator.dto.StudentGroupDto;
 import com.example.ScheduleGenerator.models.StudentGroup;
+import org.springframework.stereotype.Component;
 
+@Component
 public class StudentGroupMapper {
 
     private StudentGroupMapper() {

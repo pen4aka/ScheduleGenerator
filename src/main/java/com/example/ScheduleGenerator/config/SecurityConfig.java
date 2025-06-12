@@ -1,65 +1,42 @@
 package com.example.ScheduleGenerator.config;
 
-import com.example.ScheduleGenerator.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.*;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-@EnableWebSecurity
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetails;
+    @Autowired
+    private UserDetailsService userDetailsService;
 
-    public SecurityConfig(CustomUserDetailsService userDetails) {
-        this.userDetails = userDetails;
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf().disable()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().permitAll()
+                )
+                .formLogin(Customizer.withDefaults())
+                .build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
     @Bean
-    public AuthenticationManager authManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder auth =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
-        auth
-                .userDetailsService(userDetails)
-                .passwordEncoder(passwordEncoder());
-        return auth.build();
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-
-                .authorizeHttpRequests(auth -> auth
-
-                        .requestMatchers(HttpMethod.POST, "/users/register", "/users/login")
-                        .permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/**")
-                        .hasRole("ADMIN")
-
-                        .requestMatchers(HttpMethod.GET, "/generate/**", "/schedule/**")
-                        .hasAnyRole("USER","ADMIN")
-
-                        .anyRequest()
-                        .authenticated()
-                )
-
-                .httpBasic(Customizer.withDefaults());
-
-        return http.build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

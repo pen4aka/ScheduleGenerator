@@ -2,8 +2,9 @@ package com.example.ScheduleGenerator.mapper;
 
 import com.example.ScheduleGenerator.dto.RoomDto;
 import com.example.ScheduleGenerator.models.Room;
+import org.springframework.stereotype.Component;
 
-
+@Component
 public class RoomMapper {
 
     public static RoomDto toDTO(Room room) {

@@ -16,7 +16,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (users.findByUsername("admin").isEmpty()) {
-            User admin = new User();
+            AppUser admin = new AppUser();
             admin.setUsername("admin");
             admin.setPassword(encoder.encode("admin"));
             admin.setRole(Role.ADMIN);
