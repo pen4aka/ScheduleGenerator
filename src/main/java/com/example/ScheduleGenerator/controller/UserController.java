@@ -4,9 +4,8 @@ import com.example.ScheduleGenerator.dto.LoginDto;
 import com.example.ScheduleGenerator.dto.RegisterDto;
 import com.example.ScheduleGenerator.models.User;
 import com.example.ScheduleGenerator.models.enums.Role;
-import com.example.ScheduleGenerator.models.*;
 import com.example.ScheduleGenerator.repository.UserRepository;
-import lombok.*;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;

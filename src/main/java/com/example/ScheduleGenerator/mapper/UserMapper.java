@@ -2,7 +2,6 @@ package com.example.ScheduleGenerator.mapper;
 
 import com.example.ScheduleGenerator.dto.UserDto;
 import com.example.ScheduleGenerator.models.User;
-import com.example.ScheduleGenerator.models.enums.Role;
 
 public class UserMapper {
     public static UserDto toDto(User user) {

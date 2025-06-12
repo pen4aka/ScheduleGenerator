@@ -26,30 +26,11 @@ public class StudentGroupService {
         return StudentGroupMapper.toDto(saved);
     }
     @Transactional
-    public StudentGroupDto getGroup(Long id) {
-        StudentGroup group = groupRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Group not found with id " + id));
-        return StudentGroupMapper.toDto(group);
-    }
-    @Transactional
     public List<StudentGroupDto> getAllGroups() {
         List<StudentGroup> groups = groupRepository.findAll();
         return groups.stream()
                 .map(StudentGroupMapper::toDto)
                 .collect(Collectors.toList());
-    }
-    @Transactional
-    public StudentGroupDto updateGroup(Long id, StudentGroupDto dto) {
-        StudentGroup group = groupRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Group not found with id " + id));
-        group.setNameGroup(dto.getNameGroup());
-        group.setStudentCount(dto.getStudentCount());
-        StudentGroup updated = groupRepository.save(group);
-        return StudentGroupMapper.toDto(updated);
-    }
-    @Transactional
-    public void deleteGroup(Long id) {
-        groupRepository.deleteById(id);
     }
 }
 

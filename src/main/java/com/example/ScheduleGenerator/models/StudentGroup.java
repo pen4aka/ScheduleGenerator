@@ -3,9 +3,6 @@ package com.example.ScheduleGenerator.models;
 import jakarta.persistence.*;
 import lombok.Data;
 
-
-import java.util.List;
-
 @Data
 @Entity
 @Table(name = "groups")

@@ -1,12 +1,8 @@
 package com.example.ScheduleGenerator.controller;
 
 import com.example.ScheduleGenerator.dto.RoomDto;
-import com.example.ScheduleGenerator.models.Room;
 import com.example.ScheduleGenerator.service.RoomService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

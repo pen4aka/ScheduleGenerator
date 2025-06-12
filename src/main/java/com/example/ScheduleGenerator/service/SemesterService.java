@@ -3,20 +3,18 @@ package com.example.ScheduleGenerator.service;
 
 
 import com.example.ScheduleGenerator.dto.SemesterDto;
-import com.example.ScheduleGenerator.mapper.SemesterMapper;
+
 import com.example.ScheduleGenerator.models.Semester;
 import com.example.ScheduleGenerator.repository.SemesterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class SemesterService {
-    @Autowired
-    private SemesterRepository semesterRepo;
+    @Autowired private SemesterRepository semesterRepo;
 
     public SemesterDto create(SemesterDto dto) {
         Semester semester = new Semester();

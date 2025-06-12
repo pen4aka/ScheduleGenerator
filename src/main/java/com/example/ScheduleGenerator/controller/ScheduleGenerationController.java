@@ -33,5 +33,4 @@ public class ScheduleGenerationController {
         service.wipeScheduleData();
         return ResponseEntity.ok().build();
     }
-
 }

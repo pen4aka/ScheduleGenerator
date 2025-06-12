@@ -48,12 +48,10 @@ public class ExcelImportService {
                 subject.setSemester(currentSemester);
                 subject = subjectRepo.save(subject);
 
-                // Process assignments by subject type
                 processAssignment(row.getCell(1), subject, SubjectType.ЛЕКЦИИ);
                 processAssignment(row.getCell(2), subject, SubjectType.СЕМИНАРНИ);
                 processAssignment(row.getCell(3), subject, SubjectType.ЛАБОРАТОРНИ);
 
-                // Process schedule info
                 processScheduleInfo(subject, SubjectType.ЛЕКЦИИ, getInt(row.getCell(4)), currentSemester);
                 processScheduleInfo(subject, SubjectType.СЕМИНАРНИ, getInt(row.getCell(5)), currentSemester);
                 processScheduleInfo(subject, SubjectType.ЛАБОРАТОРНИ, getInt(row.getCell(6)), currentSemester);
@@ -80,7 +78,7 @@ public class ExcelImportService {
                 if (!exists) {
                     StudentGroup group = new StudentGroup();
                     group.setNameGroup(groupNumber);
-                    group.setStudentCount(30); // Default size
+                    group.setStudentCount(30);
                     groupRepo.save(group);
                 }
             } catch (NumberFormatException ignored) {}
@@ -181,9 +179,9 @@ public class ExcelImportService {
                 continue;
             }
 
-            String name = getCellValue(row.getCell(0)); // Номер на стая
-            Integer capacity = getInt(row.getCell(1));   // Капацитет
-            String typeText = getCellValue(row.getCell(2)); // Тип стая(Л,СУ,ЛУ)
+            String name = getCellValue(row.getCell(0));
+            Integer capacity = getInt(row.getCell(1));
+            String typeText = getCellValue(row.getCell(2));
 
             SubjectType subjectType = switch (typeText) {
                 case "Л" -> SubjectType.ЛЕКЦИИ;

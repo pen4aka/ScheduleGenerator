@@ -3,7 +3,6 @@ package com.example.ScheduleGenerator.controller;
 
 import com.example.ScheduleGenerator.dto.SemesterDto;
 import com.example.ScheduleGenerator.service.SemesterService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

@@ -2,7 +2,6 @@ package com.example.ScheduleGenerator.controller;
 
 import com.example.ScheduleGenerator.dto.TeacherDto;
 import com.example.ScheduleGenerator.service.TeacherService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
