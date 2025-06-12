@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Toolbar from "../components/Toolbar";
 import ScheduleGrid from "../components/ScheduleGrid";
-import scheduleData from "../assets/mock-data";
+import html2pdf from "html2pdf.js";
 
 export default function Dashboard() {
   const [semester, setSemester] = useState(1);
@@ -11,20 +11,29 @@ export default function Dashboard() {
   };
 
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(scheduleData, null, 2)], {
-      type: "application/json",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "schedule.json";
-    link.click();
+    const element = document.getElementById("export-pdf");
+
+    if (!element) {
+      alert("❌ Не е намерен елемент за експортиране.");
+      return;
+    }
+
+    const opt = {
+      margin: 0.3,
+      filename: `schedule-semester-${semester}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "in", format: "a2", orientation: "landscape" },
+    };
+
+    html2pdf().set(opt).from(element).save();
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 transition-all duration-300">
         <h1 className="text-3xl font-extrabold text-center text-indigo-700 mb-8">
-          📅 Седмично разписание
+          🗓️ Седмично разписание
         </h1>
 
         <Toolbar
@@ -34,7 +43,10 @@ export default function Dashboard() {
           setSemester={setSemester}
         />
 
-        <div className="mt-8 overflow-x-auto rounded-lg border border-gray-300 shadow-sm">
+        <div
+          id="export-pdf"
+          className="mt-8 overflow-x-auto rounded-lg border border-gray-300 shadow-sm bg-white"
+        >
           <ScheduleGrid semester={semester} />
         </div>
       </div>

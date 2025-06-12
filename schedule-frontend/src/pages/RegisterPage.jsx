@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, User, Lock } from "lucide-react";
+import { User, Lock } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", username: "", password: "" });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [message, setMessage] = useState("");
 
   const handleRegister = async (e) => {
@@ -20,6 +20,10 @@ export default function Register() {
       if (res.ok) {
         setMessage("✅ Регистрацията беше успешна!");
         setTimeout(() => navigate("/"), 1500);
+        const data = await res.json();
+        localStorage.setItem("role", data.role);
+        localStorage.setItem("token", data.token);
+        navigate("/");
       } else {
         setMessage(data.message || "❌ Възникна грешка при регистрация.");
       }
@@ -48,18 +52,6 @@ export default function Register() {
         )}
 
         <form onSubmit={handleRegister} className="space-y-4">
-          <div className="relative">
-            <Mail className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
-            <input
-              type="email"
-              placeholder="Имейл"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-              className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-indigo-400 outline-none"
-            />
-          </div>
-
           <div className="relative">
             <User className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
             <input

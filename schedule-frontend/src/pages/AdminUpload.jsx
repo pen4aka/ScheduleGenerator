@@ -51,7 +51,7 @@ export default function AdminUpload() {
       <div className="bg-white shadow-2xl rounded-3xl p-8 max-w-2xl w-full transition-all duration-300">
         <h1 className="text-3xl font-extrabold text-center text-indigo-700 mb-8 flex items-center justify-center gap-2">
           <UploadCloud className="w-7 h-7 text-indigo-600" />
-          Качи Excel файл
+          Качете файл
         </h1>
 
         <div
@@ -68,7 +68,24 @@ export default function AdminUpload() {
           <p className="text-indigo-700 font-medium">
             {fileName
               ? `📄 ${fileName}`
-              : "📂 Кликнете тук, за да изберете Excel файл"}
+              : "📂 Click or drag here to upload a file"}
+          </p>
+        </div>
+        <div
+          className="border-4 border-dashed border-indigo-300 rounded-xl p-6 text-center bg-indigo-50 hover:bg-indigo-100 transition cursor-pointer"
+          onClick={() => fileInputRef.current.click()}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx, .xls, .csv"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <p className="text-indigo-700 font-medium">
+            {fileName
+              ? `📄 ${fileName}`
+              : "📂 Click or drag here to upload a file"}
           </p>
         </div>
 
