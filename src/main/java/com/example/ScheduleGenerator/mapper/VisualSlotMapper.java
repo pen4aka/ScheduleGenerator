@@ -14,18 +14,15 @@ public class VisualSlotMapper {
         dto.setDay(slot.getDay());
         dto.setStartTime(slot.getStartTime());
         dto.setDurationMinutes(slot.getDurationMinutes());
-
         dto.setSubjectName(slot.getSubject().getName());
         dto.setType(slot.getType());
         dto.setTeacherName(slot.getTeacher().getName());
         dto.setRoomName(slot.getRoom().getName());
-
         dto.setGroupNames(
                 slot.getGroups().stream()
-                        .map(g -> g.getNameGroup().toString())
+                        .map(g -> String.valueOf(g.getNameGroup()))
                         .collect(Collectors.toList())
         );
-
         return dto;
     }
 }

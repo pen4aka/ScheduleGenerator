@@ -1,6 +1,7 @@
 package com.example.ScheduleGenerator.service.imports;
 
 import com.example.ScheduleGenerator.models.*;
+import com.example.ScheduleGenerator.models.enums.Season;
 import com.example.ScheduleGenerator.models.enums.SubjectType;
 import com.example.ScheduleGenerator.repository.*;
 import org.apache.poi.ss.usermodel.*;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class ExcelImportService {
@@ -20,6 +23,7 @@ public class ExcelImportService {
     @Autowired private TeachingAssignmentRepository assignmentRepo;
     @Autowired private SubjectScheduleInfoRepository scheduleInfoRepo;
     @Autowired private StudentGroupRepository groupRepo;
+    @Autowired private RoomRepository roomRepository;
 
     public void importFromExcel(MultipartFile file) throws IOException {
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
@@ -46,6 +50,7 @@ public class ExcelImportService {
                 Subject subject = new Subject();
                 subject.setName(subjectName);
                 subject.setSemester(currentSemester);
+
                 subject = subjectRepo.save(subject);
 
                 processAssignment(row.getCell(1), subject, SubjectType.ЛЕКЦИИ);
@@ -58,31 +63,39 @@ public class ExcelImportService {
 
                 importGroups(row.getCell(7));
             }
+
         }
 
         workbook.close();
     }
 
-    private void importGroups(Cell groupCell) {
-        if (groupCell == null) return;
+    private List<StudentGroup> importGroups(Cell groupCell) {
+        List<StudentGroup> groups = new ArrayList<>();
+        if (groupCell == null) return groups;
+
         String value = getCellValue(groupCell);
-        if (value == null || value.equals("0") || value.isBlank()) return;
+        if (value == null || value.equals("0") || value.isBlank()) return groups;
 
         for (String token : value.split(",")) {
             String trimmed = token.trim();
             if (trimmed.isBlank()) continue;
             try {
                 long groupNumber = Long.parseLong(trimmed);
-                boolean exists = groupRepo.findAll().stream()
-                        .anyMatch(g -> g.getNameGroup().equals(groupNumber));
-                if (!exists) {
-                    StudentGroup group = new StudentGroup();
-                    group.setNameGroup(groupNumber);
-                    group.setStudentCount(30);
-                    groupRepo.save(group);
-                }
+                StudentGroup group = groupRepo.findAll().stream()
+                        .filter(g -> g.getNameGroup().equals(groupNumber))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            StudentGroup g = new StudentGroup();
+                            g.setNameGroup(groupNumber);
+                            g.setStudentCount(30);
+                            return groupRepo.save(g);
+                        });
+
+                groups.add(group);
             } catch (NumberFormatException ignored) {}
         }
+
+        return groups;
     }
 
     private void processAssignment(Cell teacherCell, Subject subject, SubjectType type) {
@@ -140,9 +153,24 @@ public class ExcelImportService {
     }
 
     private Semester getOrCreateSemester(String name) {
-        return semesterRepo.findBySemesterNo(name).orElseGet(() -> {
+        String[] parts = name.split(" - ");
+        String cleanName = parts[0].trim();
+
+        return semesterRepo.findBySemesterNo(cleanName).orElseGet(() -> {
             Semester s = new Semester();
-            s.setSemesterNo(name);
+            s.setSemesterNo(cleanName);
+
+            if (parts.length > 1) {
+                String seasonPart = parts[1].trim().toUpperCase();
+                if (seasonPart.contains("ЛЕТЕН")) {
+                    s.setSeason(Season.ЛЕТЕН);
+                } else if (seasonPart.contains("ЗИМЕН")) {
+                    s.setSeason(Season.ЗИМЕН);
+                } else {
+                    throw new IllegalArgumentException("Unknown season in: " + name);
+                }
+            }
+
             return semesterRepo.save(s);
         });
     }
@@ -164,9 +192,6 @@ public class ExcelImportService {
             return null;
         }
     }
-
-    @Autowired
-    private RoomRepository roomRepository;
 
     public void importRoomsFromExcel(MultipartFile file) throws IOException {
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
@@ -201,5 +226,3 @@ public class ExcelImportService {
         workbook.close();
     }
 }
-
-

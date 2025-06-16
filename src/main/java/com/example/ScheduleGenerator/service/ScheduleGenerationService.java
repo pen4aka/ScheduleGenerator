@@ -3,27 +3,27 @@ package com.example.ScheduleGenerator.service;
 import com.example.ScheduleGenerator.dto.VisualSlotDto;
 import com.example.ScheduleGenerator.mapper.VisualSlotMapper;
 import com.example.ScheduleGenerator.models.*;
+import com.example.ScheduleGenerator.models.enums.Season;
+import com.example.ScheduleGenerator.models.enums.SubjectType;
 import com.example.ScheduleGenerator.repository.*;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.example.ScheduleGenerator.models.enums.SubjectType;
-
 
 @Service
 public class ScheduleGenerationService {
 
+    @Autowired private SemesterRepository semesterRepo;
     @Autowired private SubjectScheduleInfoRepository scheduleInfoRepo;
     @Autowired private TeachingAssignmentRepository teachingAssignmentRepo;
     @Autowired private RoomRepository roomRepo;
     @Autowired private StudentGroupRepository groupRepo;
     @Autowired private ScheduledSlotRepository scheduledSlotRepo;
-    @Autowired private ScheduledSlotRepository slotRepo;
 
     private static final List<DayOfWeek> WORK_DAYS = List.of(
             DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
@@ -38,175 +38,191 @@ public class ScheduleGenerationService {
             LocalTime.of(17, 0)
     );
 
-    public void generateSchedule(Long semesterId) {
+    /**
+     * Wrap in a transaction so partial writes on failure are rolled back.
+     */
+    @Transactional
+    public void generateScheduleForSeason(Season season) {
+        var sems = semesterRepo.findAll().stream()
+                .filter(s -> s.getSeason() == season)
+                .sorted(Comparator.comparing(Semester::getId))
+                .toList();
 
-        var allGroups   = groupRepo.findAll();
-        var rooms       = roomRepo.findAll();
-        var infos       = scheduleInfoRepo.findAll();
-        var assignments = teachingAssignmentRepo.findAll();
+        List<ScheduledSlot> globalExisting = scheduledSlotRepo.findAll().stream()
+                     .filter(slot -> slot.getSemester().getSeason() == season)
+                     .collect(Collectors.toCollection(ArrayList::new));
 
-        Set<String> scheduledKeys = new HashSet<>();
-        List<SubjectScheduleInfo> subjectSemesterInfo = scheduleInfoRepo.findBySubject_Semester_Id(semesterId);
-        for (SubjectScheduleInfo info : subjectSemesterInfo) {
+        var allAssign = teachingAssignmentRepo.findAll();
+        var allRooms  = roomRepo.findAll();
+        var allGroups = groupRepo.findAll();
+
+        for (var sem : sems) {
+            generateForOneSemester(
+                    sem.getId(), allGroups, allRooms, allAssign, globalExisting
+            );
+        }
+    }
+
+    private void generateForOneSemester(
+            Long semesterId,
+            List<StudentGroup> allGroups,
+            List<Room> allRooms,
+            List<TeachingAssignment> allAssign,
+            List<ScheduledSlot> globalExisting
+    ) {
+        var infos = scheduleInfoRepo.findBySubject_Semester_Id(semesterId);
+        var scheduledKeys = new HashSet<String>();
+
+        for (var info : infos) {
             if (info.getTotalHours() <= 0) continue;
-            Subject subject = info.getSubject();
-            SubjectType type = info.getType();
+            var subj  = info.getSubject();
+            var type  = info.getType();
 
-            Optional<Teacher> maybeTeacher = assignments.stream()
-                    .filter(a -> a.getSubject().equals(subject) && a.getType()==type)
-                    .map(TeachingAssignment::getTeacher)
-                    .findFirst();
-            if (maybeTeacher.isEmpty()) continue;
-            Teacher teacher = maybeTeacher.get();
+            var ta = allAssign.stream()
+                    .filter(a -> a.getSubject().equals(subj) && a.getType() == type)
+                    .findFirst().orElse(null);
+            if (ta == null) continue;
+            var teacher = ta.getTeacher();
 
-            List<List<StudentGroup>> batches = optimizedGroupBatches(allGroups, type, rooms);
+            var batches = (type == SubjectType.ЛАБОРАТОРНИ)
+                    ? optimizedGroupBatches(allGroups, allRooms)
+                    : List.of(allGroups);
 
-            for (List<StudentGroup> batch : batches) {
-                String batchKey = subject.getId() + "|" + type + "|" +
+            for (var batch : batches) {
+                var key = subj.getId() + "|" + type + "|" +
                         batch.stream().map(StudentGroup::getId).sorted()
                                 .map(Object::toString).collect(Collectors.joining(","));
+                if (!scheduledKeys.add(key)) continue;
 
-                if (scheduledKeys.contains(batchKey)) {
-                    continue;
-                }
-
-                findAvailableSlot(teacher, batch, rooms, type)
+                findSlot(semesterId, teacher, batch, allRooms, type, globalExisting)
                         .ifPresent(slot -> {
-                            slot.setSubject(subject);
+                            var sref = new Semester(); sref.setId(semesterId);
+                            slot.setSemester(sref);
+                            slot.setSubject(subj);
                             slot.setType(type);
                             slot.setGroups(new ArrayList<>(batch));
                             slot.setWeeksFrequency(info.getWeeksFrequency());
                             scheduledSlotRepo.save(slot);
-                            scheduledKeys.add(batchKey);
+                            globalExisting.add(slot);
                         });
             }
         }
     }
 
-    public List<VisualSlotDto> getSchedule(Long semesterId) {
-        return slotRepo.findBySubject_Semester_Id(semesterId).stream()
-                .map(VisualSlotMapper::toDTO)
-                .sorted(Comparator
-                        .comparing(VisualSlotDto::getDay)
-                        .thenComparing(VisualSlotDto::getStartTime))
-                .collect(Collectors.toList());
-    }
-
-    private Optional<ScheduledSlot> findAvailableSlot(
+    private Optional<ScheduledSlot> findSlot(
+            Long semesterId,
             Teacher teacher,
             List<StudentGroup> groups,
             List<Room> rooms,
-            SubjectType type
+            SubjectType type,
+            List<ScheduledSlot> existing
     ) {
         int duration = (type == SubjectType.ЛАБОРАТОРНИ) ? 180 : 120;
-        var existing = scheduledSlotRepo.findAll();
 
-        List<DayOfWeek> loadBalancedDays = WORK_DAYS.stream()
+        // Spread evenly across days
+        var days = WORK_DAYS.stream()
                 .sorted(Comparator.comparingInt(d ->
-                        (int) scheduledSlotRepo.findAll().stream()
-                                .filter(s -> s.getDay() == d)
-                                .count()
-                ))
-                .collect(Collectors.toList());
+                        (int) existing.stream().filter(s -> s.getDay() == d).count()))
+                .toList();
 
-        for (DayOfWeek day : loadBalancedDays) {
-            for (LocalTime start : SLOT_START_TIMES) {
-                LocalTime end = start.plusMinutes(duration);
+        for (var day : days) {
+            for (var start : SLOT_START_TIMES) {
+                var end = start.plusMinutes(duration);
 
-                for (Room room : rooms) {
-                    if (room.getType() != type) continue;
+                // primary rooms (exact type match)
+                List<Room> primary = rooms.stream()
+                        .filter(r -> r.getType() == type)
+                        .toList();
 
-                    boolean conflict = hasConflict(day, start, duration, room, teacher, groups);
-                    if (conflict) continue;
+                // fallback rooms for seminars only: use lecture rooms if no seminar room free
+                List<Room> fallback = List.of();
+                if (type == SubjectType.СЕМИНАРНИ) {
+                    fallback = rooms.stream()
+                            .filter(r -> r.getType() == SubjectType.ЛЕКЦИИ)
+                            .toList();
+                }
 
-                    ScheduledSlot s = new ScheduledSlot();
-                    s.setDay(day);
-                    s.setStartTime(start);
-                    s.setDurationMinutes(duration);
-                    s.setRoom(room);
-                    s.setTeacher(teacher);
-                    return Optional.of(s);
+                // try primary first, then fallback (for seminars)
+                for (var candidateSet : List.of(primary, fallback)) {
+                    for (var room : candidateSet) {
+                        boolean conflict = existing.stream().anyMatch(slot -> {
+                            if (slot.getDay() != day) return false;
+                            var s2 = slot.getStartTime();
+                            var e2 = s2.plusMinutes(slot.getDurationMinutes());
+                            if (end.isBefore(s2) || start.isAfter(e2)) return false;
+                            if (slot.getRoom().equals(room))     return true;
+                            if (slot.getTeacher().equals(teacher)) return true;
+                            if (slot.getSemester().getId().equals(semesterId)
+                                    && !Collections.disjoint(slot.getGroups(), groups)) {
+                                return true;
+                            }
+                            return false;
+                        });
+                        if (!conflict) {
+                            var s = new ScheduledSlot();
+                            s.setDay(day);
+                            s.setStartTime(start);
+                            s.setDurationMinutes(duration);
+                            s.setRoom(room);
+                            s.setTeacher(teacher);
+                            return Optional.of(s);
+                        }
+                    }
+                    // if user asked only for primary (i.e. non-seminar), don't loop fallback
+                    if (type != SubjectType.СЕМИНАРНИ) break;
                 }
             }
         }
         return Optional.empty();
     }
 
-    private boolean hasConflict(
-            DayOfWeek day, LocalTime start, int duration, Room room,
-            Teacher teacher, List<StudentGroup> groups
-    ) {
-        LocalTime end = start.plusMinutes(duration);
-
-        return scheduledSlotRepo.findAll().stream().anyMatch(slot -> {
-            if (!slot.getDay().equals(day)) return false;
-
-            LocalTime existingStart = slot.getStartTime();
-            LocalTime existingEnd = existingStart.plusMinutes(slot.getDurationMinutes());
-
-            boolean overlap = !(end.isBefore(existingStart) || start.isAfter(existingEnd));
-            boolean roomConflict = slot.getRoom().equals(room);
-            boolean teacherConflict = slot.getTeacher().equals(teacher);
-            boolean groupConflict = !Collections.disjoint(slot.getGroups(), groups);
-
-            return overlap && (roomConflict || teacherConflict || groupConflict);
-        });
-    }
-
-    private int calculateRequiredSessions(int totalHours, int semNumber) {
-        if (semNumber == 8) {
-            if (totalHours == 20) return 10;
-            if (totalHours == 10) return 5;
-        }
-        return switch (totalHours) {
-            case 45 -> 15;
-            case 30 -> 15;
-            case 15 -> 8;
-            default -> 0;
-        };
-    }
-
+    /**
+     * Split only labs into sized batches; lectures & seminars remain all-groups.
+     */
     private List<List<StudentGroup>> optimizedGroupBatches(
-            List<StudentGroup> allGroups, SubjectType type, List<Room> rooms
+            List<StudentGroup> allGroups,
+            List<Room> rooms
     ) {
-        List<List<StudentGroup>> result = new ArrayList<>();
-        int totalStudents = allGroups.stream().mapToInt(StudentGroup::getStudentCount).sum();
-
-        List<Room> validRooms = rooms.stream()
-                .filter(r -> r.getType() == type)
+        // find largest lab room
+        var labs = rooms.stream()
+                .filter(r -> r.getType() == SubjectType.ЛАБОРАТОРНИ)
                 .sorted(Comparator.comparingInt(Room::getCapacity).reversed())
-                .collect(Collectors.toList());
+                .toList();
 
-        if (validRooms.isEmpty()) {
-            return allGroups.stream().map(List::of).collect(Collectors.toList());
+        int total = allGroups.stream().mapToInt(StudentGroup::getStudentCount).sum();
+        if (labs.isEmpty() || labs.get(0).getCapacity() >= total) {
+            return List.of(allGroups);
         }
 
-        Room maxRoom = validRooms.get(0);
+        var result = new ArrayList<List<StudentGroup>>();
+        var cur = new ArrayList<StudentGroup>();
+        int curTot = 0, maxCap = labs.get(0).getCapacity();
 
-        if (maxRoom.getCapacity() >= totalStudents) {
-            result.add(allGroups);
-        } else {
-            List<StudentGroup> current = new ArrayList<>();
-            int currentTotal = 0;
-
-            for (StudentGroup group : allGroups) {
-                if (currentTotal + group.getStudentCount() <= maxRoom.getCapacity()) {
-                    current.add(group);
-                    currentTotal += group.getStudentCount();
-                } else {
-                    result.add(new ArrayList<>(current));
-                    current.clear();
-                    current.add(group);
-                    currentTotal = group.getStudentCount();
-                }
+        for (var g : allGroups) {
+            if (curTot + g.getStudentCount() <= maxCap) {
+                cur.add(g);
+                curTot += g.getStudentCount();
+            } else {
+                result.add(new ArrayList<>(cur));
+                cur.clear();
+                cur.add(g);
+                curTot = g.getStudentCount();
             }
-            if (!current.isEmpty()) result.add(current);
         }
-
+        if (!cur.isEmpty()) result.add(cur);
         return result;
     }
 
     public void wipeScheduleData() {
         scheduledSlotRepo.deleteAll();
+    }
+
+    public List<VisualSlotDto> view(Long semesterId) {
+        return scheduledSlotRepo.findBySubject_Semester_Id(semesterId).stream()
+                .map(VisualSlotMapper::toDTO)
+                .sorted(Comparator
+                        .comparing(VisualSlotDto::getDay)
+                        .thenComparing(VisualSlotDto::getStartTime))
+                .collect(Collectors.toList());
     }
 }

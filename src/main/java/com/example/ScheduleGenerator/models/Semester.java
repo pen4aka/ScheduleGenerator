@@ -1,5 +1,6 @@
 package com.example.ScheduleGenerator.models;
 
+import com.example.ScheduleGenerator.models.enums.Season;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -20,6 +21,11 @@ public class Semester {
     @Column(name = "semester_no", nullable = false)
     private String semesterNo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Season season;
+
     @OneToMany(mappedBy = "semester", cascade = CascadeType.ALL)
     private List<Subject> subjects = new ArrayList<>();
+
 }

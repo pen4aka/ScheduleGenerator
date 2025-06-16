@@ -5,6 +5,7 @@ package com.example.ScheduleGenerator.service;
 import com.example.ScheduleGenerator.dto.SemesterDto;
 
 import com.example.ScheduleGenerator.models.Semester;
+import com.example.ScheduleGenerator.models.enums.Season;
 import com.example.ScheduleGenerator.repository.SemesterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,5 +32,11 @@ public class SemesterService {
             dto.setSemesterNo(s.getSemesterNo());
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    public List<Semester> getSemestersBySeason(Season season) {
+        return semesterRepo.findAll().stream()
+                .filter(s -> s.getSeason() == season)
+                .collect(Collectors.toList());
     }
 }

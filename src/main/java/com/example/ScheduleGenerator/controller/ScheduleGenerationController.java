@@ -1,6 +1,7 @@
 package com.example.ScheduleGenerator.controller;
 
 import com.example.ScheduleGenerator.dto.VisualSlotDto;
+import com.example.ScheduleGenerator.models.enums.Season;
 import com.example.ScheduleGenerator.service.ScheduleGenerationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,24 +14,24 @@ import java.util.List;
 public class ScheduleGenerationController {
 
         @Autowired
-        private ScheduleGenerationService service;
+        private ScheduleGenerationService scheduleGenerationService;
 
-        @PostMapping("/generate")
-        public ResponseEntity<Void> generate(@RequestParam Long semesterId) {
-            service.wipeScheduleData();
-            service.generateSchedule(semesterId);
-            return ResponseEntity.ok().build();
-        }
+    @PostMapping("/generate/by-season")
+    public ResponseEntity<String> generateBySeason(@RequestParam Season season) {
+        scheduleGenerationService.generateScheduleForSeason(season);
+        return ResponseEntity.ok("Generated schedules for all 4 “"
+                + season + "” semesters.");
+    }
 
     @GetMapping("/view")
     public ResponseEntity<List<VisualSlotDto>> view(@RequestParam Long semesterId) {
-        List<VisualSlotDto> schedule = service.getSchedule(semesterId);
+        List<VisualSlotDto> schedule = scheduleGenerationService.view(semesterId);
         return ResponseEntity.ok(schedule);
     }
 
     @DeleteMapping("/wipe")
     public ResponseEntity<Void> wipeSchedule() {
-        service.wipeScheduleData();
+        scheduleGenerationService.wipeScheduleData();
         return ResponseEntity.ok().build();
     }
 }
