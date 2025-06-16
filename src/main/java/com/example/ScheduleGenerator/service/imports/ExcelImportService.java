@@ -4,6 +4,9 @@ import com.example.ScheduleGenerator.models.*;
 import com.example.ScheduleGenerator.models.enums.Season;
 import com.example.ScheduleGenerator.models.enums.SubjectType;
 import com.example.ScheduleGenerator.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +28,20 @@ public class ExcelImportService {
     @Autowired private StudentGroupRepository groupRepo;
     @Autowired private RoomRepository roomRepository;
 
+    @PersistenceContext
+    private EntityManager em;
+
+    @Transactional
     public void importFromExcel(MultipartFile file) throws IOException {
+
+        em.createNativeQuery("TRUNCATE TABLE scheduled_slot RESTART IDENTITY CASCADE").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE subject_schedule_info RESTART IDENTITY CASCADE").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE teaching_assignment RESTART IDENTITY CASCADE").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE subjects RESTART IDENTITY CASCADE").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE groups RESTART IDENTITY CASCADE").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE teachers RESTART IDENTITY CASCADE").executeUpdate();
+        em.createNativeQuery("TRUNCATE TABLE semesters RESTART IDENTITY CASCADE").executeUpdate();
+
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
         Sheet sheet = workbook.getSheetAt(0);
 
@@ -193,7 +209,11 @@ public class ExcelImportService {
         }
     }
 
+    @Transactional
     public void importRoomsFromExcel(MultipartFile file) throws IOException {
+
+        em.createNativeQuery("TRUNCATE TABLE rooms RESTART IDENTITY CASCADE").executeUpdate();
+
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
         Sheet sheet = workbook.getSheetAt(0);
         boolean skipHeader = true;

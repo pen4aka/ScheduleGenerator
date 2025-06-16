@@ -38,9 +38,6 @@ public class ScheduleGenerationService {
             LocalTime.of(17, 0)
     );
 
-    /**
-     * Wrap in a transaction so partial writes on failure are rolled back.
-     */
     @Transactional
     public void generateScheduleForSeason(Season season) {
         var sems = semesterRepo.findAll().stream()
@@ -119,7 +116,6 @@ public class ScheduleGenerationService {
     ) {
         int duration = (type == SubjectType.ЛАБОРАТОРНИ) ? 180 : 120;
 
-        // Spread evenly across days
         var days = WORK_DAYS.stream()
                 .sorted(Comparator.comparingInt(d ->
                         (int) existing.stream().filter(s -> s.getDay() == d).count()))
@@ -129,12 +125,10 @@ public class ScheduleGenerationService {
             for (var start : SLOT_START_TIMES) {
                 var end = start.plusMinutes(duration);
 
-                // primary rooms (exact type match)
                 List<Room> primary = rooms.stream()
                         .filter(r -> r.getType() == type)
                         .toList();
 
-                // fallback rooms for seminars only: use lecture rooms if no seminar room free
                 List<Room> fallback = List.of();
                 if (type == SubjectType.СЕМИНАРНИ) {
                     fallback = rooms.stream()
@@ -142,7 +136,6 @@ public class ScheduleGenerationService {
                             .toList();
                 }
 
-                // try primary first, then fallback (for seminars)
                 for (var candidateSet : List.of(primary, fallback)) {
                     for (var room : candidateSet) {
                         boolean conflict = existing.stream().anyMatch(slot -> {
@@ -168,7 +161,6 @@ public class ScheduleGenerationService {
                             return Optional.of(s);
                         }
                     }
-                    // if user asked only for primary (i.e. non-seminar), don't loop fallback
                     if (type != SubjectType.СЕМИНАРНИ) break;
                 }
             }
@@ -176,14 +168,10 @@ public class ScheduleGenerationService {
         return Optional.empty();
     }
 
-    /**
-     * Split only labs into sized batches; lectures & seminars remain all-groups.
-     */
     private List<List<StudentGroup>> optimizedGroupBatches(
             List<StudentGroup> allGroups,
             List<Room> rooms
     ) {
-        // find largest lab room
         var labs = rooms.stream()
                 .filter(r -> r.getType() == SubjectType.ЛАБОРАТОРНИ)
                 .sorted(Comparator.comparingInt(Room::getCapacity).reversed())
