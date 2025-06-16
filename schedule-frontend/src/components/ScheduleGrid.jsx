@@ -21,7 +21,6 @@ const hours = [
 
 function mergeLessons(data) {
   const result = [];
-
   days.forEach((day) => {
     const lessons = hours.map((time) =>
       data.find((l) => l.day === day && l.time === time)
@@ -43,7 +42,8 @@ function mergeLessons(data) {
         lessons[i + span].teacher === current.teacher &&
         lessons[i + span].room === current.room &&
         lessons[i + span].week === current.week &&
-        lessons[i + span].type === current.type
+        lessons[i + span].type === current.type &&
+        lessons[i + span].group === current.group
       ) {
         span++;
       }
@@ -63,72 +63,100 @@ export default function ScheduleGrid({ semester }) {
   const filteredData = scheduleData.filter(
     (item) => parseInt(item.semester) === semester
   );
-  const mergedData = mergeLessons(filteredData);
+
+  const groups =
+    filteredData.length > 0
+      ? [...new Set(filteredData.map((item) => item.group))].filter(
+          (g) => g !== "all"
+        )
+      : ["76", "77", "78", "79"];
 
   return (
-    <div className="grid grid-cols-[100px_repeat(14,1fr)] border border-gray-300">
-      <div className="bg-gray-100 border border-gray-300 font-semibold flex items-center justify-center">
-        Ден
-      </div>
-      {hours.map((hour, index) => (
-        <div
-          key={`hour-${index}`}
-          className="bg-gray-100 border border-gray-300 text-xs flex items-center justify-center"
-        >
-          {hour}
-        </div>
-      ))}
+    <div className="space-y-12">
+      {groups.map((group) => {
+        const groupData = filteredData.filter(
+          (item) => item.group === group || item.group === "all"
+        );
+        const mergedData =
+          groupData.length > 0 ? mergeLessons(groupData) : mergeLessons([]);
 
-      {mergedData.map(({ day, lessons }) => (
-        <React.Fragment key={day}>
-          <div className="bg-gray-100 border border-gray-300 font-semibold flex items-center justify-center">
-            {day}
-          </div>
-          {lessons.map((lesson, idx) => {
-            if (lesson === "skip") return null;
-            if (!lesson)
-              return (
-                <div
-                  key={idx}
-                  className="border border-gray-300 h-20 bg-white"
-                ></div>
-              );
-
-            return (
-              <div
-                key={idx}
-                className={`border border-gray-300 h-20 p-1 text-white text-xs relative overflow-hidden ${
-                  lesson.type === "л"
-                    ? "bg-blue-500"
-                    : lesson.type === "у"
-                    ? "bg-green-500"
-                    : lesson.type === "л.у"
-                    ? "bg-yellow-500"
-                    : "bg-gray-500"
-                } ${
-                  lesson.week === "odd" || lesson.week === "even"
-                    ? "diagonal-cell"
-                    : ""
-                }`}
-                style={{ gridColumn: `span ${lesson.colSpan}` }}
-              >
-                <div className="absolute inset-0 z-10 p-1 flex flex-col justify-between">
-                  <div>
-                    <strong>{lesson.subject}</strong>
-                    <br />
-                    {lesson.teacher}, стая {lesson.room}
-                  </div>
-                  {lesson.week !== "all" && (
-                    <div className="text-[10px] opacity-80 self-end">
-                      {lesson.week === "odd" ? "нечетна" : "четна"}
-                    </div>
-                  )}
-                </div>
+        return (
+          <div key={group}>
+            <h2 className="text-xl font-bold text-indigo-600 mb-4">
+              Група {group}
+            </h2>
+            <div className="grid grid-cols-[100px_repeat(14,1fr)] border border-gray-300">
+              <div className="bg-gray-100 border border-gray-300 font-semibold flex items-center justify-center">
+                Ден
               </div>
-            );
-          })}
-        </React.Fragment>
-      ))}
+              {hours.map((hour, index) => (
+                <div
+                  key={`hour-${index}`}
+                  className="bg-gray-100 border border-gray-300 text-xs flex items-center justify-center"
+                >
+                  {hour}
+                </div>
+              ))}
+
+              {days.map((day) => {
+                const lessonRow =
+                  mergedData.find((row) => row.day === day)?.lessons ||
+                  Array(14).fill(null);
+                return (
+                  <React.Fragment key={day}>
+                    <div className="bg-gray-100 border border-gray-300 font-semibold flex items-center justify-center">
+                      {day}
+                    </div>
+                    {lessonRow.map((lesson, idx) => {
+                      if (lesson === "skip") return null;
+                      if (!lesson)
+                        return (
+                          <div
+                            key={idx}
+                            className="border border-gray-300 h-20 bg-white"
+                          ></div>
+                        );
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`border border-gray-300 h-20 p-1 text-white text-xs relative overflow-hidden ${
+                            lesson.type === "л"
+                              ? "bg-blue-500"
+                              : lesson.type === "у"
+                              ? "bg-green-500"
+                              : lesson.type === "л.у"
+                              ? "bg-yellow-500"
+                              : "bg-gray-500"
+                          } ${
+                            lesson.week === "odd" || lesson.week === "even"
+                              ? "diagonal-cell"
+                              : ""
+                          }`}
+                          style={{ gridColumn: `span ${lesson.colSpan}` }}
+                        >
+                          <div className="absolute inset-0 z-10 p-1 flex flex-col justify-between">
+                            <div>
+                              <strong>{lesson.subject}</strong>
+                              <br />
+                              {lesson.teacher}, стая {lesson.room}
+                            </div>
+                            {lesson.week !== "all" && (
+                              <div className="text-[10px] opacity-80 self-end">
+                                {lesson.week === "odd" ? "нечетна" : "четна"}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

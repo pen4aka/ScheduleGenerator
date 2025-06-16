@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import AdminUpload from "../pages/AdminUpload"; // увери се, че пътят е коректен
+import React, { useState, useEffect } from "react";
+import AdminUpload from "../pages/AdminUpload";
 
 export default function Toolbar({
   onGenerate,
@@ -7,8 +7,20 @@ export default function Toolbar({
   semester,
   setSemester,
 }) {
+  const [season, setSeason] = useState("winter");
   const [showUpload, setShowUpload] = useState(false);
   const role = localStorage.getItem("role");
+
+  const winterSemesters = [1, 3, 5, 7];
+  const summerSemesters = [2, 4, 6, 8];
+
+  const availableSemesters =
+    season === "winter" ? winterSemesters : summerSemesters;
+
+  useEffect(() => {
+    // Reset to first semester of selected season
+    setSemester(availableSemesters[0]);
+  }, [season]);
 
   return (
     <>
@@ -16,13 +28,22 @@ export default function Toolbar({
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <h1 className="text-xl font-bold">Избор на семестър</h1>
           <select
+            value={season}
+            onChange={(e) => setSeason(e.target.value)}
+            className="border border-gray-300 rounded p-2"
+          >
+            <option value="winter">Зимен семестър</option>
+            <option value="summer">Летен семестър</option>
+          </select>
+
+          <select
             value={semester}
             onChange={(e) => setSemester(parseInt(e.target.value))}
             className="border border-gray-300 rounded p-2"
           >
-            {[...Array(8)].map((_, i) => (
-              <option key={i} value={i + 1}>
-                Семестър {i + 1}
+            {availableSemesters.map((sem) => (
+              <option key={sem} value={sem}>
+                Семестър {sem}
               </option>
             ))}
           </select>

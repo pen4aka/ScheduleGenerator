@@ -1,32 +1,38 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Toolbar from "../components/Toolbar";
 import ScheduleGrid from "../components/ScheduleGrid";
-import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export default function Dashboard() {
   const [semester, setSemester] = useState(1);
+  const exportRef = useRef(null);
 
   const handleGenerate = () => {
+    // In real app: fetch from backend
     alert("Генериране на разписание за семестър " + semester);
   };
 
-  const handleExport = () => {
-    const element = document.getElementById("export-pdf");
-
-    if (!element) {
-      alert("❌ Не е намерен елемент за експортиране.");
+  const handleExport = async () => {
+    if (!exportRef.current) {
+      alert("❌ Няма съдържание за експортиране.");
       return;
     }
 
-    const opt = {
-      margin: 0.3,
-      filename: `schedule-semester-${semester}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "in", format: "a2", orientation: "landscape" },
-    };
-
-    html2pdf().set(opt).from(element).save();
+    try {
+      const canvas = await html2canvas(exportRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: [canvas.width, canvas.height],
+      });
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save(`schedule-semester-${semester}.pdf`);
+    } catch (err) {
+      console.error("PDF Export Error:", err);
+      alert("⚠️ Възникна грешка при експортирането.");
+    }
   };
 
   return (
@@ -44,7 +50,7 @@ export default function Dashboard() {
         />
 
         <div
-          id="export-pdf"
+          ref={exportRef}
           className="mt-8 overflow-x-auto rounded-lg border border-gray-300 shadow-sm bg-white"
         >
           <ScheduleGrid semester={semester} />
