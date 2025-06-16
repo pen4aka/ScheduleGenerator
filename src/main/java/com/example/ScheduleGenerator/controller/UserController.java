@@ -1,17 +1,13 @@
 package com.example.ScheduleGenerator.controller;
 
-import com.example.ScheduleGenerator.dto.LoginDto;
 import com.example.ScheduleGenerator.dto.RegisterRequestDto;
 import com.example.ScheduleGenerator.models.AppUser;
 import com.example.ScheduleGenerator.models.enums.Role;
 import com.example.ScheduleGenerator.repository.UserRepository;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.*;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +18,6 @@ import java.util.Optional;
 @RequestMapping("/users")
 public class UserController {
 
-    @Autowired private AuthenticationManager authManager;
     @Autowired private UserRepository users;
     @Autowired private PasswordEncoder encoder;
 

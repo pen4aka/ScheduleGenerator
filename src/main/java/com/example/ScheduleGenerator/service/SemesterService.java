@@ -1,7 +1,5 @@
 package com.example.ScheduleGenerator.service;
 
-
-
 import com.example.ScheduleGenerator.dto.SemesterDto;
 
 import com.example.ScheduleGenerator.models.Semester;

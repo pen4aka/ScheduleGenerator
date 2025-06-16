@@ -1,4 +1,5 @@
 package com.example.ScheduleGenerator.mapper;
+
 import com.example.ScheduleGenerator.dto.SemesterDto;
 import com.example.ScheduleGenerator.models.Semester;
 import org.springframework.stereotype.Component;

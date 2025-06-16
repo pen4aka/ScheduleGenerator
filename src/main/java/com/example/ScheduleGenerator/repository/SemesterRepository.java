@@ -11,5 +11,4 @@ import java.util.Optional;
 @Repository
 public interface SemesterRepository extends JpaRepository<Semester, Long> {
     Optional<Semester> findBySemesterNo(String semesterNo);
-    List<Semester> findBySeason(Season season);
 }

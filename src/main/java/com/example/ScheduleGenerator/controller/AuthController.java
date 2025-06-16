@@ -1,7 +1,6 @@
 package com.example.ScheduleGenerator.controller;
 
 import com.example.ScheduleGenerator.dto.LoginDto;
-import com.example.ScheduleGenerator.dto.RegisterRequestDto;
 import com.example.ScheduleGenerator.jwtStrategy.JwtUtil;
 import com.example.ScheduleGenerator.models.AppUser;
 import com.example.ScheduleGenerator.models.enums.Role;
