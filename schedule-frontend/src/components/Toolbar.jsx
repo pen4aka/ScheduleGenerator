@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import AdminUpload from "../pages/AdminUpload";
 
 export default function Toolbar({
@@ -6,8 +6,9 @@ export default function Toolbar({
   onExport,
   semester,
   setSemester,
+  season,
+  setSeason,
 }) {
-  const [season, setSeason] = useState("winter");
   const [showUpload, setShowUpload] = useState(false);
   const role = localStorage.getItem("role");
 
@@ -18,7 +19,6 @@ export default function Toolbar({
     season === "winter" ? winterSemesters : summerSemesters;
 
   useEffect(() => {
-    // Reset to first semester of selected season
     setSemester(availableSemesters[0]);
   }, [season]);
 
@@ -27,6 +27,7 @@ export default function Toolbar({
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 bg-white shadow-md p-4 rounded-xl space-y-4 sm:space-y-0">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <h1 className="text-xl font-bold">Избор на семестър</h1>
+
           <select
             value={season}
             onChange={(e) => setSeason(e.target.value)}
@@ -64,7 +65,7 @@ export default function Toolbar({
             Експортиране
           </button>
 
-          {role === "admin" && (
+          {role === "ROLE_ADMIN" && (
             <button
               onClick={() => setShowUpload(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition"
