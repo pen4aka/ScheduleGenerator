@@ -1,7 +1,14 @@
 import React from "react";
-import scheduleData from "../assets/mock-data";
 
-const days = ["Пон", "Вт", "Ср", "Чт", "Пт"];
+const days = ["ПОНЕДЕЛНИК", "ВТОРНИК", "СРЯДА", "ЧЕТВЪРТЪК", "ПЕТЪК"];
+const apiDays = {
+  MONDAY: "ПОНЕДЕЛНИК",
+  TUESDAY: "ВТОРНИК",
+  WEDNESDAY: "СРЯДА",
+  THURSDAY: "ЧЕТВЪРТЪК",
+  FRIDAY: "ПЕТЪК",
+};
+
 const hours = [
   "7:30 - 8:15",
   "8:30 - 9:15",
@@ -19,67 +26,43 @@ const hours = [
   "20:45 - 21:30",
 ];
 
-function mergeLessons(data) {
-  const result = [];
-  days.forEach((day) => {
-    const lessons = hours.map((time) =>
-      data.find((l) => l.day === day && l.time === time)
-    );
-
-    const merged = [];
-    for (let i = 0; i < lessons.length; i++) {
-      const current = lessons[i];
-      if (!current) {
-        merged.push(null);
-        continue;
-      }
-
-      let span = 1;
-      while (
-        i + span < lessons.length &&
-        lessons[i + span] &&
-        lessons[i + span].subject === current.subject &&
-        lessons[i + span].teacher === current.teacher &&
-        lessons[i + span].room === current.room &&
-        lessons[i + span].week === current.week &&
-        lessons[i + span].type === current.type &&
-        lessons[i + span].group === current.group
-      ) {
-        span++;
-      }
-
-      merged.push({ ...current, colSpan: span });
-      for (let j = 1; j < span; j++) merged.push("skip");
-      i += span - 1;
-    }
-
-    result.push({ day, lessons: merged });
-  });
-
-  return result;
+function convertStartTimeToSlotIndex(startTime) {
+  const timeMap = {
+    "07:30:00": 0,
+    "08:00:00": 0,
+    "08:30:00": 1,
+    "09:30:00": 2,
+    "10:30:00": 3,
+    "11:30:00": 4,
+    "12:30:00": 5,
+    "13:00:00": 6,
+    "13:45:00": 6,
+    "14:45:00": 7,
+    "15:45:00": 8,
+    "16:45:00": 9,
+    "17:00:00": 10,
+    "17:45:00": 10,
+    "18:45:00": 11,
+    "19:45:00": 12,
+    "20:45:00": 13,
+  };
+  return timeMap[startTime] ?? 0;
 }
 
-export default function ScheduleGrid({ semester }) {
+export default function ScheduleGrid({ semester, scheduleData }) {
   const filteredData = scheduleData.filter(
     (item) => parseInt(item.semester) === semester
   );
 
   const groups =
     filteredData.length > 0
-      ? [...new Set(filteredData.map((item) => item.group))].filter(
-          (g) => g !== "all"
-        )
+      ? [...new Set(filteredData.map((item) => item.group))].sort()
       : ["76", "77", "78", "79"];
 
   return (
     <div className="space-y-12">
       {groups.map((group) => {
-        const groupData = filteredData.filter(
-          (item) => item.group === group || item.group === "all"
-        );
-        const mergedData =
-          groupData.length > 0 ? mergeLessons(groupData) : mergeLessons([]);
-
+        const groupData = filteredData.filter((item) => item.group === group);
         return (
           <div key={group}>
             <h2 className="text-xl font-bold text-indigo-600 mb-4">
@@ -89,63 +72,64 @@ export default function ScheduleGrid({ semester }) {
               <div className="bg-gray-100 border border-gray-300 font-semibold flex items-center justify-center">
                 Ден
               </div>
-              {hours.map((hour, index) => (
+              {hours.map((hour, i) => (
                 <div
-                  key={`hour-${index}`}
+                  key={`hour-${i}`}
                   className="bg-gray-100 border border-gray-300 text-xs flex items-center justify-center"
                 >
                   {hour}
                 </div>
               ))}
 
-              {days.map((day) => {
-                const lessonRow =
-                  mergedData.find((row) => row.day === day)?.lessons ||
-                  Array(14).fill(null);
+              {days.map((dayName) => {
+                const dayEntries = groupData.filter(
+                  (entry) => apiDays[entry.day] === dayName
+                );
+                const cells = Array(14).fill(null);
+
+                dayEntries.forEach((entry) => {
+                  const start = convertStartTimeToSlotIndex(entry.time);
+                  const duration = Math.ceil(entry.durationMinutes / 45);
+                  cells[start] = { ...entry, colSpan: duration };
+                  for (let i = 1; i < duration; i++) {
+                    cells[start + i] = "skip";
+                  }
+                });
+
                 return (
-                  <React.Fragment key={day}>
+                  <React.Fragment key={dayName}>
                     <div className="bg-gray-100 border border-gray-300 font-semibold flex items-center justify-center">
-                      {day}
+                      {dayName}
                     </div>
-                    {lessonRow.map((lesson, idx) => {
-                      if (lesson === "skip") return null;
-                      if (!lesson)
+                    {cells.map((cell, i) => {
+                      if (cell === "skip") return null;
+                      if (!cell)
                         return (
                           <div
-                            key={idx}
+                            key={i}
                             className="border border-gray-300 h-20 bg-white"
                           ></div>
                         );
-
                       return (
                         <div
-                          key={idx}
+                          key={i}
                           className={`border border-gray-300 h-20 p-1 text-white text-xs relative overflow-hidden ${
-                            lesson.type === "л"
+                            cell.type === "л"
                               ? "bg-blue-500"
-                              : lesson.type === "у"
+                              : cell.type === "у"
                               ? "bg-green-500"
-                              : lesson.type === "л.у"
+                              : cell.type === "л.у"
                               ? "bg-yellow-500"
                               : "bg-gray-500"
-                          } ${
-                            lesson.week === "odd" || lesson.week === "even"
-                              ? "diagonal-cell"
-                              : ""
                           }`}
-                          style={{ gridColumn: `span ${lesson.colSpan}` }}
+                          style={{ gridColumn: `span ${cell.colSpan}` }}
                         >
                           <div className="absolute inset-0 z-10 p-1 flex flex-col justify-between">
                             <div>
-                              <strong>{lesson.subject}</strong>
+                              <strong>{cell.subject}</strong>
                               <br />
-                              {lesson.teacher}, стая {lesson.room}
+                              {cell.teacher}, стая {cell.room}
                             </div>
-                            {lesson.week !== "all" && (
-                              <div className="text-[10px] opacity-80 self-end">
-                                {lesson.week === "odd" ? "нечетна" : "четна"}
-                              </div>
-                            )}
                           </div>
                         </div>
                       );

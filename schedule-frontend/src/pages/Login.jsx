@@ -13,15 +13,21 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
+      const res = await fetch("http://localhost:8080/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
+
       const data = await res.json();
 
-      if (res.ok) {
-        navigate(data.role === "admin" ? "/admin" : "/dashboard");
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+        const payload = JSON.parse(atob(data.token.split(".")[1]));
+        const role =
+          payload.role || payload["authorities"]?.[0]?.authority || "user";
+        localStorage.setItem("role", role);
+        navigate("/dashboard");
       } else {
         setError(data.message || "Грешка при вход.");
       }

@@ -9,26 +9,37 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    try {
-      const res = await fetch("http://localhost:3000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
 
-      if (res.ok) {
-        setMessage("✅ Регистрацията беше успешна!");
-        setTimeout(() => navigate("/"), 1500);
-        const data = await res.json();
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("token", data.token);
-        navigate("/");
-      } else {
-        setMessage(data.message || "❌ Възникна грешка при регистрация.");
+    const res = await fetch("http://localhost:8080/users/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      console.error("Грешка при парсване на отговора:", err);
+      return;
+    }
+
+    if (res.ok && data.token) {
+      localStorage.setItem("token", data.token);
+
+      try {
+        const payload = JSON.parse(atob(data.token.split(".")[1]));
+        const role =
+          payload.role || payload["authorities"]?.[0]?.authority || "user";
+        localStorage.setItem("role", role);
+      } catch (e) {
+        console.error("Проблем с декодирането на токена:", e);
       }
-    } catch {
-      setMessage("❌ Сървърна грешка.");
+
+      setMessage("✅ Успешна регистрация!");
+      setTimeout(() => navigate("/dashboard"), 1000);
+    } else {
+      setMessage(data.message || "❌ Възникна грешка при регистрация.");
     }
   };
 
