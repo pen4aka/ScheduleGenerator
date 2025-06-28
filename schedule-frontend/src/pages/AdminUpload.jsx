@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { UploadCloud, CheckCircle, XCircle } from "lucide-react";
 
 export default function AdminUpload() {
@@ -10,6 +11,15 @@ export default function AdminUpload() {
 
   const mainRef = useRef(null);
   const roomsRef = useRef(null);
+
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
 
   const handleMainFile = (e) => {
     const file = e.target.files[0];
@@ -41,6 +51,9 @@ export default function AdminUpload() {
         {
           method: "POST",
           body: formData1,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
@@ -51,6 +64,9 @@ export default function AdminUpload() {
         {
           method: "POST",
           body: formData2,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 

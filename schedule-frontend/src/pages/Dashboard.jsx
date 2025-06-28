@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import ScheduleGrid from "../components/ScheduleGrid";
 import jsPDF from "jspdf";
@@ -10,6 +11,13 @@ export default function Dashboard() {
   const [scheduleData, setScheduleData] = useState([]);
 
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
 
   const handleGenerate = async () => {
     try {
@@ -39,7 +47,6 @@ export default function Dashboard() {
 
       const data = await response.json();
 
-      // 🔄 Трансформиране към очаквания от ScheduleGrid формат
       const formatted = [];
 
       data.forEach((entry) => {
